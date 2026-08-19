@@ -1,0 +1,35 @@
+{
+  "project_name": "TinyMarketLLM",
+  "schema_version": "2.3",
+  "scanner": {
+    "watch_folder": "charts/incoming",
+    "processed_folder": "charts/processed",
+    "failed_folder": "charts/failed",
+    "review_folder": "charts/review",
+    "supported_extensions": [
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".webp",
+      ".bmp",
+      ".gif",
+      ".tif",
+      ".tiff"
+    ]
+  },
+  "vision": {
+    "enabled": true,
+    "model": "gpt-5-mini",
+    "image_detail": "high",
+    "minimum_confidence_for_processed": 0.85
+  },
+  "structured_swings": true,
+  "price_rsi_relationship": true,
+  "analysis_scope": {"price_action": true, "rsi": true, "moving_average": true, "ignored_indicators": ["MACD", "VWAP", "Bollinger Bands", "Volume", "Other"]},
+  "analysis": {
+    "never_guess_missing_values": true,
+    "charts_without_price_scale_are_valid": true,
+    "charts_without_symbol_are_valid": true,
+    "charts_without_timeframe_are_valid": true
+  }
+}

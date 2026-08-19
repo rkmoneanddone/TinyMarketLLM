@@ -1,0 +1,300 @@
+{
+  "schema_version": "2.0",
+  "model_type": "bucketed_historical_state_pattern",
+  "state_columns": [
+    "structure",
+    "price_direction",
+    "rsi_direction",
+    "rsi_zone"
+  ],
+  "minimum_samples": 20,
+  "promotion_threshold": 0.8,
+  "patterns": [
+    {
+      "state": {
+        "structure": "HH",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 231,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.5238095238095238,
+        "DOWN": 0.3939393939393939,
+        "FLAT": 0.08225108225108226
+      },
+      "expected_move_pct": 4.623778562759793,
+      "expected_favorable_move_pct": 7.027990499902137,
+      "expected_adverse_move_pct": 2.345481926612162,
+      "expected_duration": 7.628099173553719,
+      "sustain_probability": 0.49586776859504134,
+      "target_probability": 0.9669421487603306,
+      "confidence": 0.5238095238095238
+    },
+    {
+      "state": {
+        "structure": "HH",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "OVERBOUGHT"
+      },
+      "samples": 23,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.6956521739130435,
+        "DOWN": 0.30434782608695654,
+        "FLAT": 0.0
+      },
+      "expected_move_pct": 4.279612620367599,
+      "expected_favorable_move_pct": 6.419286776047148,
+      "expected_adverse_move_pct": 2.713999736101713,
+      "expected_duration": 8.0625,
+      "sustain_probability": 0.25,
+      "target_probability": 1.0,
+      "confidence": 0.6956521739130435
+    },
+    {
+      "state": {
+        "structure": "HH",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 184,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.5054347826086957,
+        "DOWN": 0.3804347826086957,
+        "FLAT": 0.11413043478260869
+      },
+      "expected_move_pct": 4.30483105114858,
+      "expected_favorable_move_pct": 6.534353065683214,
+      "expected_adverse_move_pct": 2.784666703812005,
+      "expected_duration": 7.075268817204301,
+      "sustain_probability": 0.3870967741935484,
+      "target_probability": 0.946236559139785,
+      "confidence": 0.5054347826086957
+    },
+    {
+      "state": {
+        "structure": "HH",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "OVERBOUGHT"
+      },
+      "samples": 67,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.6417910447761194,
+        "DOWN": 0.31343283582089554,
+        "FLAT": 0.04477611940298507
+      },
+      "expected_move_pct": 3.678652907279965,
+      "expected_favorable_move_pct": 6.162109693973324,
+      "expected_adverse_move_pct": 2.628761893846951,
+      "expected_duration": 7.186046511627907,
+      "sustain_probability": 0.46511627906976744,
+      "target_probability": 1.0,
+      "confidence": 0.6417910447761194
+    },
+    {
+      "state": {
+        "structure": "HL",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 135,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.6592592592592592,
+        "DOWN": 0.2962962962962963,
+        "FLAT": 0.044444444444444446
+      },
+      "expected_move_pct": 6.28491096894489,
+      "expected_favorable_move_pct": 8.973778370525922,
+      "expected_adverse_move_pct": 1.511078314424984,
+      "expected_duration": 7.46067415730337,
+      "sustain_probability": 0.6853932584269663,
+      "target_probability": 0.9887640449438202,
+      "confidence": 0.6592592592592592
+    },
+    {
+      "state": {
+        "structure": "HL",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 190,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.5263157894736842,
+        "DOWN": 0.3894736842105263,
+        "FLAT": 0.08421052631578947
+      },
+      "expected_move_pct": 4.8030004815314,
+      "expected_favorable_move_pct": 7.543816326982344,
+      "expected_adverse_move_pct": 2.025216746750509,
+      "expected_duration": 7.45,
+      "sustain_probability": 0.5,
+      "target_probability": 0.99,
+      "confidence": 0.5263157894736842
+    },
+    {
+      "state": {
+        "structure": "HL",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "OVERBOUGHT"
+      },
+      "samples": 32,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.53125,
+        "DOWN": 0.34375,
+        "FLAT": 0.125
+      },
+      "expected_move_pct": 4.821562907931842,
+      "expected_favorable_move_pct": 7.717101330258689,
+      "expected_adverse_move_pct": 2.5474600948357335,
+      "expected_duration": 8.176470588235293,
+      "sustain_probability": 0.35294117647058826,
+      "target_probability": 0.9411764705882353,
+      "confidence": 0.53125
+    },
+    {
+      "state": {
+        "structure": "LH",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 256,
+      "predicted_direction": "DOWN",
+      "direction_probability": {
+        "UP": 0.45703125,
+        "DOWN": 0.48828125,
+        "FLAT": 0.0546875
+      },
+      "expected_move_pct": -6.221537311167543,
+      "expected_favorable_move_pct": 1.5113895944151823,
+      "expected_adverse_move_pct": 9.189127199329963,
+      "expected_duration": 7.728,
+      "sustain_probability": 0.664,
+      "target_probability": 0.312,
+      "confidence": 0.48828125
+    },
+    {
+      "state": {
+        "structure": "LH",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "OVERSOLD"
+      },
+      "samples": 31,
+      "predicted_direction": "DOWN",
+      "direction_probability": {
+        "UP": 0.3225806451612903,
+        "DOWN": 0.6129032258064516,
+        "FLAT": 0.06451612903225806
+      },
+      "expected_move_pct": -10.059715463827507,
+      "expected_favorable_move_pct": 3.633095827126838,
+      "expected_adverse_move_pct": 16.096642897387625,
+      "expected_duration": 7.842105263157895,
+      "sustain_probability": 0.47368421052631576,
+      "target_probability": 0.5789473684210527,
+      "confidence": 0.6129032258064516
+    },
+    {
+      "state": {
+        "structure": "LH",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 159,
+      "predicted_direction": "DOWN",
+      "direction_probability": {
+        "UP": 0.4088050314465409,
+        "DOWN": 0.5094339622641509,
+        "FLAT": 0.08176100628930817
+      },
+      "expected_move_pct": -5.616649856634713,
+      "expected_favorable_move_pct": 1.4622790637412681,
+      "expected_adverse_move_pct": 8.862719341686356,
+      "expected_duration": 7.148148148148148,
+      "sustain_probability": 0.6666666666666666,
+      "target_probability": 0.2839506172839506,
+      "confidence": 0.5094339622641509
+    },
+    {
+      "state": {
+        "structure": "LL",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 127,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.6299212598425197,
+        "DOWN": 0.31496062992125984,
+        "FLAT": 0.05511811023622047
+      },
+      "expected_move_pct": 5.815954914837443,
+      "expected_favorable_move_pct": 8.323083964266614,
+      "expected_adverse_move_pct": 1.491253409778304,
+      "expected_duration": 7.725,
+      "sustain_probability": 0.6125,
+      "target_probability": 1.0,
+      "confidence": 0.6299212598425197
+    },
+    {
+      "state": {
+        "structure": "LL",
+        "price_direction": "DOWN",
+        "rsi_direction": "FALLING",
+        "rsi_zone": "OVERSOLD"
+      },
+      "samples": 21,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.5238095238095238,
+        "DOWN": 0.42857142857142855,
+        "FLAT": 0.047619047619047616
+      },
+      "expected_move_pct": 5.757282014537704,
+      "expected_favorable_move_pct": 8.192720242239204,
+      "expected_adverse_move_pct": 2.051133636761246,
+      "expected_duration": 7.454545454545454,
+      "sustain_probability": 0.6363636363636364,
+      "target_probability": 1.0,
+      "confidence": 0.5238095238095238
+    },
+    {
+      "state": {
+        "structure": "LL",
+        "price_direction": "UP",
+        "rsi_direction": "RISING",
+        "rsi_zone": "NEUTRAL"
+      },
+      "samples": 222,
+      "predicted_direction": "UP",
+      "direction_probability": {
+        "UP": 0.5405405405405406,
+        "DOWN": 0.3918918918918919,
+        "FLAT": 0.06756756756756757
+      },
+      "expected_move_pct": 5.670507281730332,
+      "expected_favorable_move_pct": 8.146245984202041,
+      "expected_adverse_move_pct": 1.7071443300036322,
+      "expected_duration": 7.458333333333333,
+      "sustain_probability": 0.55,
+      "target_probability": 0.9916666666666667,
+      "confidence": 0.5405405405405406
+    }
+  ]
+}

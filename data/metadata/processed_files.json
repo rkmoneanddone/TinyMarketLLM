@@ -1,0 +1,739 @@
+{
+  "files": {
+    "815be03d2668dd780a97d7c340e501613f205723f40bb338333dac9730f065b6": {
+      "record_id": "chart_20260819_131524_326606",
+      "original_name": "HOk7egdbIAAO0VA.png",
+      "processed_at": "2026-08-19T07:45:24.326606+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HOk7egdbIAAO0VA.png"
+    },
+    "adf86a61c8099e80b02bf0804f1784d1f26551fddd58da5595a36a2011627f2e": {
+      "record_id": "chart_20260819_140602_896581",
+      "original_name": "HMcMx4YbQAEZ8_N.jpg",
+      "processed_at": "2026-08-19T08:36:03.030840+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HMcMx4YbQAEZ8_N.jpg"
+    },
+    "c95288a9d7081a84f631d9dd8bf83ceefc2a3d99d3926f95180a64321642150f": {
+      "record_id": "chart_20260819_140618_288578",
+      "original_name": "HNqJxcnaEAAIHAm.jpg",
+      "processed_at": "2026-08-19T08:36:18.288578+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HNqJxcnaEAAIHAm.jpg"
+    },
+    "ae15e3a176c80a644f918b7b4f045822a322925f0ed1d5893a9ec6bc399d1882": {
+      "record_id": "chart_20260819_140643_104665",
+      "original_name": "HOkof85bQAAaGTQ.jpg",
+      "processed_at": "2026-08-19T08:36:43.107686+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HOkof85bQAAaGTQ.jpg"
+    },
+    "b6dc1be97e62c5b44241113e9b4ab629910bac3608f09b08b8b290a23ca4725d": {
+      "record_id": "chart_20260819_140701_918518",
+      "original_name": "HP-d9jCagAEI6Tk.jpg",
+      "processed_at": "2026-08-19T08:37:02.007765+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP-d9jCagAEI6Tk.jpg"
+    },
+    "a3c6d031ab3bcfd89ceb99e50df8b801de7e876b6b466d9b0177a138004c012d": {
+      "record_id": "chart_20260819_140720_799990",
+      "original_name": "HP5HNrEacAAPMeO.jpg",
+      "processed_at": "2026-08-19T08:37:20.801224+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP5HNrEacAAPMeO.jpg"
+    },
+    "b212950bbd0048756761492aa1eb5a561a9b7ffa974ad62e6fd3a5b438e4118b": {
+      "record_id": "chart_20260819_140739_611189",
+      "original_name": "HP5nWk0awAAt6xi.jpg",
+      "processed_at": "2026-08-19T08:37:39.703736+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP5nWk0awAAt6xi.jpg"
+    },
+    "faea0e7967209e471c982168fa105a46944ca1882efdd5d374c7654299b82f9b": {
+      "record_id": "chart_20260819_140757_111033",
+      "original_name": "HP5oKgtbYAAeXHM.jpg",
+      "processed_at": "2026-08-19T08:37:57.118782+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP5oKgtbYAAeXHM.jpg"
+    },
+    "4c7fab521703e068de0f3b37a475928e954ceaaf01091a8a60af62206a86e93f": {
+      "record_id": "chart_20260819_140821_900790",
+      "original_name": "HP6bo4PaoAAyCHE.jpg",
+      "processed_at": "2026-08-19T08:38:21.909123+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP6bo4PaoAAyCHE.jpg"
+    },
+    "7287c68e61bb3297a078358535e8dd3ef15217d6ecc1ecab2e9efb12e7d78254": {
+      "record_id": "chart_20260819_140839_103848",
+      "original_name": "HP6J8_maUAARgmO.jpg",
+      "processed_at": "2026-08-19T08:38:39.103848+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP6J8_maUAARgmO.jpg"
+    },
+    "e0906f60669feac82abdf9fa160b1fc903d0383ab1e3a637ffa8abb19f6da11d": {
+      "record_id": "chart_20260819_140857_402165",
+      "original_name": "HP6qkp-aQAE6wjT.jpg",
+      "processed_at": "2026-08-19T08:38:57.406185+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP6qkp-aQAE6wjT.jpg"
+    },
+    "e8f7c42895b6108edb058906ae16c934bab28413b9bfb777ec4a8dc42fcbe962": {
+      "record_id": "chart_20260819_140920_420781",
+      "original_name": "HP742AHa8AEaRJl.jpg",
+      "processed_at": "2026-08-19T08:39:20.424787+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP742AHa8AEaRJl.jpg"
+    },
+    "3c46731939252032a954bbb43976e973704a042dd341de634b1982f81d7bcfb8": {
+      "record_id": "chart_20260819_140935_531250",
+      "original_name": "HP7U6hUbsAAJV0E.png",
+      "processed_at": "2026-08-19T08:39:35.533818+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP7U6hUbsAAJV0E.png"
+    },
+    "937ca158f715d6a19f5395d48f2d3aaef75cf21e7cb44b4645782a28874a8234": {
+      "record_id": "chart_20260819_140956_241101",
+      "original_name": "HP8CuTWbgAIrGVp.png",
+      "processed_at": "2026-08-19T08:39:56.243245+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP8CuTWbgAIrGVp.png"
+    },
+    "4b81781044912cad9ef3d6dfec943bfbd378023fb36f2e2aa5a5991a7f2922af": {
+      "record_id": "chart_20260819_141018_233382",
+      "original_name": "HP8QbPea4AAL6N0.jpg",
+      "processed_at": "2026-08-19T08:40:18.239426+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HP8QbPea4AAL6N0.jpg"
+    },
+    "487a13df453027650064d70646b7cfe82f7d73d14d2887d6a4095eebe063a125": {
+      "record_id": "chart_20260819_141039_122534",
+      "original_name": "HPaiuADaIAAk9Tr.jpg",
+      "processed_at": "2026-08-19T08:40:39.130846+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPaiuADaIAAk9Tr.jpg"
+    },
+    "7b738a565da71f8f4ea9c76fc36ec847a7174477bef10fb80017c513aaf9f4dd": {
+      "record_id": "chart_20260819_141058_191633",
+      "original_name": "HPAlzaibcAAn8cb.jpg",
+      "processed_at": "2026-08-19T08:40:58.191633+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPAlzaibcAAn8cb.jpg"
+    },
+    "a130a95d9c737a4260eb30989322c6c5aa656974ff3d675ae94ba1f35df90b4c": {
+      "record_id": "chart_20260819_141123_795253",
+      "original_name": "HPamZzYagAAnV9u.jpg",
+      "processed_at": "2026-08-19T08:41:23.802713+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPamZzYagAAnV9u.jpg"
+    },
+    "ccc297996e3a0e7185e6b56b77c41dcfb9e51b29ba6de200b3c3327d729d642b": {
+      "record_id": "chart_20260819_141143_907916",
+      "original_name": "HPAw6DxboAA3adY.jpg",
+      "processed_at": "2026-08-19T08:41:43.909924+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPAw6DxboAA3adY.jpg"
+    },
+    "72d24b524c18d55eb7c3dc5160d0387d5a2e499cc9922fb924cd7327b5b8f254": {
+      "record_id": "chart_20260819_141206_505535",
+      "original_name": "HPAxev7bkAAONl1.png",
+      "processed_at": "2026-08-19T08:42:06.510818+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPAxev7bkAAONl1.png"
+    },
+    "4be6c1a7edfee3a5462e5fc50da7b8364c9b8c746cbae3f21acec3cc393c106c": {
+      "record_id": "chart_20260819_141222_754615",
+      "original_name": "HPB1ohMaMAEXsKg.jpg",
+      "processed_at": "2026-08-19T08:42:22.756139+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPB1ohMaMAEXsKg.jpg"
+    },
+    "52b5a0e8aa16c305c7f514b5c441526bcbec8df06291fa1f848db2a961623411": {
+      "record_id": "chart_20260819_141240_576988",
+      "original_name": "HPBPzBFaoAAbSc7.jpg",
+      "processed_at": "2026-08-19T08:42:40.581474+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPBPzBFaoAAbSc7.jpg"
+    },
+    "189e78bcff6675fe9e05df168dd830a6928a5980a4554986eb5565bc10a97673": {
+      "record_id": "chart_20260819_141256_753318",
+      "original_name": "HPBS-SBbUAAlyIZ.jpg",
+      "processed_at": "2026-08-19T08:42:56.759443+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPBS-SBbUAAlyIZ.jpg"
+    },
+    "ced3185733b33cda8579d605a56f9f07fe95e29ca4dc2ce2968d81c87291e9ab": {
+      "record_id": "chart_20260819_141320_959000",
+      "original_name": "HPBY6UkbAAAoiWY.jpg",
+      "processed_at": "2026-08-19T08:43:20.959000+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPBY6UkbAAAoiWY.jpg"
+    },
+    "282fdaabd75211f1d379e333a5316ab921cb2a0a0afe0be15efd5a8867affe05": {
+      "record_id": "chart_20260819_141341_737025",
+      "original_name": "HPCu2eZbUAAVnwt.jpg",
+      "processed_at": "2026-08-19T08:43:41.737025+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPCu2eZbUAAVnwt.jpg"
+    },
+    "5be4b4a102f50835bf15cdf13f76e439c0c492e18e1740e8f63ebc7487246815": {
+      "record_id": "chart_20260819_141358_976926",
+      "original_name": "HPCwVvBaMAArc_N.jpg",
+      "processed_at": "2026-08-19T08:43:58.976926+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPCwVvBaMAArc_N.jpg"
+    },
+    "b9b9dca9c7b74f4e0fadd303f171d82a9e0c39e23bbc071ff61fffccc28790c9": {
+      "record_id": "chart_20260819_141416_454600",
+      "original_name": "HPDCwapa4AA3Vml.png",
+      "processed_at": "2026-08-19T08:44:16.456381+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPDCwapa4AA3Vml.png"
+    },
+    "c1b32131ca1705eec38a47bbf2de21d0efceae0d8475201473f024499f46e742": {
+      "record_id": "chart_20260819_141434_887424",
+      "original_name": "HPDRFR6a0AA0zr1.jpg",
+      "processed_at": "2026-08-19T08:44:34.887424+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPDRFR6a0AA0zr1.jpg"
+    },
+    "92d9a273c116927584af50ab5131df043c7cb29e8ede6c1f93841e0b847444bf": {
+      "record_id": "chart_20260819_141451_485572",
+      "original_name": "HPFgnHcbEAAwGQV.jpg",
+      "processed_at": "2026-08-19T08:44:51.485572+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPFgnHcbEAAwGQV.jpg"
+    },
+    "9439f81f0eab92ae6009972d2a2c92b944ed71cdbf21f0447f2f5d3e3672d29f": {
+      "record_id": "chart_20260819_141513_117258",
+      "original_name": "HPfmxhZbIAECC-5.jpg",
+      "processed_at": "2026-08-19T08:45:13.122300+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPfmxhZbIAECC-5.jpg"
+    },
+    "821a0cddc7507043ffd1571f27033ffcb8de41adfbe5719aa867488dee6659db": {
+      "record_id": "chart_20260819_141530_869988",
+      "original_name": "HPGahT_asAIb57O.jpg",
+      "processed_at": "2026-08-19T08:45:30.872010+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPGahT_asAIb57O.jpg"
+    },
+    "f11cf440f00a24219559e5162d4ab69b5384f7b0e82832bb461a367cc493c7d0": {
+      "record_id": "chart_20260819_141550_576677",
+      "original_name": "HPGjNRUaEAAdjSm.png",
+      "processed_at": "2026-08-19T08:45:50.682654+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPGjNRUaEAAdjSm.png"
+    },
+    "792e04d089b7674ebac44c913276a5471cc9e9b59efb662086b2f37fc281d97c": {
+      "record_id": "chart_20260819_141612_404568",
+      "original_name": "HPGuughbIAAImTt.jpg",
+      "processed_at": "2026-08-19T08:46:12.495296+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPGuughbIAAImTt.jpg"
+    },
+    "ce877a8799789fb4e32ec48045c56992557ed9f6672d17459ddf11d89c699888": {
+      "record_id": "chart_20260819_141631_217164",
+      "original_name": "HPGvrc3bAAAcklN.jpg",
+      "processed_at": "2026-08-19T08:46:31.221200+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPGvrc3bAAAcklN.jpg"
+    },
+    "a64116aff20847f0205eb9a965aa2121b4700bfd31e9e61920609548cf3633a7": {
+      "record_id": "chart_20260819_141649_762732",
+      "original_name": "HPIilGIaEAA50KS.jpg",
+      "processed_at": "2026-08-19T08:46:49.772969+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIilGIaEAA50KS.jpg"
+    },
+    "dee88be5a9cdb730b06842aa52aebe8ccb4a8d5fac512f3de0ebfcdc10456d1f": {
+      "record_id": "chart_20260819_141709_202640",
+      "original_name": "HPiIvGcbQAAHwIL.jpg",
+      "processed_at": "2026-08-19T08:47:09.202640+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPiIvGcbQAAHwIL.jpg"
+    },
+    "e7b83bd68b04bc83774546741b939d17a615a6b3946acba54306bad42d3b78ad": {
+      "record_id": "chart_20260819_141724_778865",
+      "original_name": "HPIl2ITaIAEInrz.jpg",
+      "processed_at": "2026-08-19T08:47:24.778865+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIl2ITaIAEInrz.jpg"
+    },
+    "2c17e217cb4b263ece5c6c6ccdf84a62d31cc33990048a5e7330698e0d97ba27": {
+      "record_id": "chart_20260819_141747_789829",
+      "original_name": "HPIl6iNaQAAay4e.jpg",
+      "processed_at": "2026-08-19T08:47:47.797276+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIl6iNaQAAay4e.jpg"
+    },
+    "7b2b5a42700cb5d39458e28aa543992e3143b2731d8082356479b062101f9be6": {
+      "record_id": "chart_20260819_141803_871657",
+      "original_name": "HPIlnW9akAEtuO7.jpg",
+      "processed_at": "2026-08-19T08:48:03.884340+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIlnW9akAEtuO7.jpg"
+    },
+    "3e7990aab63fc2cfcca8202169bb6999c1d6f3ddc45a3fb69406465219ecb683": {
+      "record_id": "chart_20260819_141824_749237",
+      "original_name": "HPIlqfubkAA--GO.jpg",
+      "processed_at": "2026-08-19T08:48:24.751247+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIlqfubkAA--GO.jpg"
+    },
+    "07aa36e01820cc61f2ae9fcb744c4d6231ae8325e384871616ff159cace289db": {
+      "record_id": "chart_20260819_141848_532902",
+      "original_name": "HPIoGOtagAENFFx.jpg",
+      "processed_at": "2026-08-19T08:48:48.535986+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPIoGOtagAENFFx.jpg"
+    },
+    "de110fdcf69e184ae51a40258310401e9376f8b2129a7ba361865a1658b2b302": {
+      "record_id": "chart_20260819_141910_705786",
+      "original_name": "HPiPiE-bAAAoe3B.jpg",
+      "processed_at": "2026-08-19T08:49:10.711338+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPiPiE-bAAAoe3B.jpg"
+    },
+    "37265063a899e983ad55435e26ee5ef06f5b238b04d7f629b9a642594652b109": {
+      "record_id": "chart_20260819_141925_331625",
+      "original_name": "HPK_VlxWAAAHOsl.jpg",
+      "processed_at": "2026-08-19T08:49:25.333472+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPK_VlxWAAAHOsl.jpg"
+    },
+    "7923705e366c9f8841540bfe38416d075c29572f1a8ed49c69afb3d1b72631b9": {
+      "record_id": "chart_20260819_141945_669375",
+      "original_name": "HPlelDqagAAyJOr.jpg",
+      "processed_at": "2026-08-19T08:49:45.673126+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPlelDqagAAyJOr.jpg"
+    },
+    "6a63022cd91c63ad43624a15a45d21bd7b4526aa2691b5002e431609f8e26b6e": {
+      "record_id": "chart_20260819_142002_661038",
+      "original_name": "HPm0byeasAAqksW.png",
+      "processed_at": "2026-08-19T08:50:02.752524+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPm0byeasAAqksW.png"
+    },
+    "ba717662ae04b8495b0ab6d2b13fac54c6d58fe40036eab50c6494ee3fc685f2": {
+      "record_id": "chart_20260819_142020_397483",
+      "original_name": "HPMHbUcaIAAjxQj.jpg",
+      "processed_at": "2026-08-19T08:50:20.402529+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPMHbUcaIAAjxQj.jpg"
+    },
+    "c35ea8e6dc3c693de0f9c3a465bd5158e310f2e48660d052d72901707828c00f": {
+      "record_id": "chart_20260819_142049_063567",
+      "original_name": "HPMpN20agAA1Co3.png",
+      "processed_at": "2026-08-19T08:50:49.063567+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPMpN20agAA1Co3.png"
+    },
+    "86958fb326f53a4d77b51a0e8af6526f749703fe1ac55429437faca3ae7b5f11": {
+      "record_id": "chart_20260819_142103_122329",
+      "original_name": "HPNevGnawAAxKeb.jpg",
+      "processed_at": "2026-08-19T08:51:03.128956+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPNevGnawAAxKeb.jpg"
+    },
+    "cfccda777d902ff03d29f52ae98eccf12c59c0f6832a35804f4b0d06ce9aca67": {
+      "record_id": "chart_20260819_142122_285211",
+      "original_name": "HPNoCMiaQAAorNX.jpg",
+      "processed_at": "2026-08-19T08:51:22.290770+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPNoCMiaQAAorNX.jpg"
+    },
+    "626fd23d8ca7a97fa0e2dc1a17a5928968729e6ab18af8fa39f52493fb47c6a0": {
+      "record_id": "chart_20260819_142145_250009",
+      "original_name": "HPnP2z_aQAAJ4pe.jpg",
+      "processed_at": "2026-08-19T08:51:45.250009+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPnP2z_aQAAJ4pe.jpg"
+    },
+    "a4c4008281d9681e7cf6fe7688b104c0bffcdf11d671f2eca4bed74aafbec25d": {
+      "record_id": "chart_20260819_142200_709462",
+      "original_name": "HPSK8TqaAAAXSLj.jpg",
+      "processed_at": "2026-08-19T08:52:00.812823+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPSK8TqaAAAXSLj.jpg"
+    },
+    "1c1b644e09a04274a10e4b47031e488fefe62780f3a70b10b3bf3b492edfd845": {
+      "record_id": "chart_20260819_142221_378753",
+      "original_name": "HPSpdADbkAA4z90.png",
+      "processed_at": "2026-08-19T08:52:21.385606+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPSpdADbkAA4z90.png"
+    },
+    "578002c254db944e7245f4a5eef9ab9f29f808a6ae533d077b7141b244ff3be6": {
+      "record_id": "chart_20260819_142238_885740",
+      "original_name": "HPSw6PobQAATLEU.jpg",
+      "processed_at": "2026-08-19T08:52:38.894191+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPSw6PobQAATLEU.jpg"
+    },
+    "d85b054e8f7c7bb9f2ebdd40acb69754ac3b576ddeba8fa836341294f90fc894": {
+      "record_id": "chart_20260819_142255_909136",
+      "original_name": "HPtOl4HbYAAyr6r.png",
+      "processed_at": "2026-08-19T08:52:55.911731+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPtOl4HbYAAyr6r.png"
+    },
+    "e46bef881bdcb6437ac97bd4190ea0749ff56e6f1d7017535dcefde8166b8214": {
+      "record_id": "chart_20260819_142313_641753",
+      "original_name": "HPtOl4zbIAAl8lJ.png",
+      "processed_at": "2026-08-19T08:53:13.647131+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPtOl4zbIAAl8lJ.png"
+    },
+    "e39df90c2eb61814625c20c513101cf3e981f7b1e89e007df9db2e61c6af0daa": {
+      "record_id": "chart_20260819_142335_153028",
+      "original_name": "HPtOl6KagAAllkx.png",
+      "processed_at": "2026-08-19T08:53:35.248772+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPtOl6KagAAllkx.png"
+    },
+    "4af7affb112eb3d6158b5be12e765f46ddc23f4b0adb5b812d6584b1ccc35b7c": {
+      "record_id": "chart_20260819_142352_008516",
+      "original_name": "HPtOl7RbgAABYCM.png",
+      "processed_at": "2026-08-19T08:53:52.012547+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPtOl7RbgAABYCM.png"
+    },
+    "6df8fae5e9dde32df9c7011a42ce5652e888d685643589ccbf44c54d281d8613": {
+      "record_id": "chart_20260819_151405_552678",
+      "original_name": "HPV1BgjacAEuFlw.jpg",
+      "processed_at": "2026-08-19T09:44:05.656523+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPV1BgjacAEuFlw.jpg"
+    },
+    "b5afcc36e4d33349e441f972d39881718c5e9687f47e2f60c63326ad972f8778": {
+      "record_id": "chart_20260819_151435_242011",
+      "original_name": "HPV6_UTaEAAq-hp.png",
+      "processed_at": "2026-08-19T09:44:35.248983+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPV6_UTaEAAq-hp.png"
+    },
+    "b2e3851a46e31e26508517f31983e36c6086a6f2e32a6b15f457c5fa29404e63": {
+      "record_id": "chart_20260819_151457_244917",
+      "original_name": "HPV738xbkAAyR17.jpg",
+      "processed_at": "2026-08-19T09:44:57.251876+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPV738xbkAAyR17.jpg"
+    },
+    "752df7fb56240471258a587b74041317434d5ec8f16725c40593df0b3785641b": {
+      "record_id": "chart_20260819_151513_890222",
+      "original_name": "HPVa2slbAAAPuIG.jpg",
+      "processed_at": "2026-08-19T09:45:13.896546+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVa2slbAAAPuIG.jpg"
+    },
+    "6aace42ef4cec006b0599eec2c128e804f2bd0fb80e2034d6a5b0e0d3e13b159": {
+      "record_id": "chart_20260819_151534_822113",
+      "original_name": "HPVCU39bkAArkFD.jpg",
+      "processed_at": "2026-08-19T09:45:34.827814+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVCU39bkAArkFD.jpg"
+    },
+    "b94b7b427602c01ed8aa85d9fff9ddf2e0aa0a0287de204e5bb67936efa9ea13": {
+      "record_id": "chart_20260819_151557_566809",
+      "original_name": "HPVemipa0AANesK.jpg",
+      "processed_at": "2026-08-19T09:45:57.566809+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVemipa0AANesK.jpg"
+    },
+    "eb70a7978dc854ca89bdcceaf892cfc6df705b1c72fb1e9c3be92fc4b5299937": {
+      "record_id": "chart_20260819_151618_268071",
+      "original_name": "HPVHYePaQAAUTZ5.jpg",
+      "processed_at": "2026-08-19T09:46:18.268071+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVHYePaQAAUTZ5.jpg"
+    },
+    "12cc6a222fc5001cc64d9771bcb270f9ac417a0b898f3403d803e38425e5cfd5": {
+      "record_id": "chart_20260819_151644_041708",
+      "original_name": "HPVjEqjacAAI5M-.jpg",
+      "processed_at": "2026-08-19T09:46:44.044716+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVjEqjacAAI5M-.jpg"
+    },
+    "81b14ae9ed894d6790a3099fc9a7dde63890c6217a5bfef0d0688a393a6944d7": {
+      "record_id": "chart_20260819_151706_496856",
+      "original_name": "HPVpYOqbUAAcIbH.jpg",
+      "processed_at": "2026-08-19T09:47:06.496856+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPVpYOqbUAAcIbH.jpg"
+    },
+    "bd673e05b7eedaacb7350e657daf18bbe70fd357e5f9b3d71c5e8b430e5352a9": {
+      "record_id": "chart_20260819_151725_596846",
+      "original_name": "HPW-kNQbwAAyLst.png",
+      "processed_at": "2026-08-19T09:47:25.603334+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPW-kNQbwAAyLst.png"
+    },
+    "59ce368988f52b1831111ce9eff365435bcd1d14d4842c39a1caf3e036140435": {
+      "record_id": "chart_20260819_151744_640434",
+      "original_name": "HPWdwrnbIAAJe6x.jpg",
+      "processed_at": "2026-08-19T09:47:44.642438+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPWdwrnbIAAJe6x.jpg"
+    },
+    "a5843cc85b11623c28c5586ffa863bdf67f731078be6c7578682da5909d22519": {
+      "record_id": "chart_20260819_151803_748610",
+      "original_name": "HPWNVt_aYAAO-l-.jpg",
+      "processed_at": "2026-08-19T09:48:03.752185+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPWNVt_aYAAO-l-.jpg"
+    },
+    "6c80f2e7cf863785ef68909abd5f2a587fe0bd8d722ec3a03d70d8b9031153d7": {
+      "record_id": "chart_20260819_151819_060915",
+      "original_name": "HPWwBRQbAAAqBbs.jpg",
+      "processed_at": "2026-08-19T09:48:19.062921+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPWwBRQbAAAqBbs.jpg"
+    },
+    "10b7940d3a26516f7aadcb00878a7b9d6af63def1756564aa283dbc25e780c42": {
+      "record_id": "chart_20260819_151838_445861",
+      "original_name": "HPWxCRrbgAA3W5D.jpg",
+      "processed_at": "2026-08-19T09:48:38.445861+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPWxCRrbgAA3W5D.jpg"
+    },
+    "4fbd3a40ef65bc6c5ae8b554f4ec5f07e6caa311627f5141846b576dd8baf36f": {
+      "record_id": "chart_20260819_151855_768122",
+      "original_name": "HPWyWXXasAAsupT.png",
+      "processed_at": "2026-08-19T09:48:55.768122+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPWyWXXasAAsupT.png"
+    },
+    "48e882f3a1683f63ab31e385c848aa1d64bccd560cfa38bb788e5b2997e92c87": {
+      "record_id": "chart_20260819_151913_929313",
+      "original_name": "HPXFsydbAAA5jSP.png",
+      "processed_at": "2026-08-19T09:49:13.931595+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXFsydbAAA5jSP.png"
+    },
+    "d0b64b1e63d1d257ba93392fd226cd6f78159e93ed17f384fac4d1706a6b955e": {
+      "record_id": "chart_20260819_151938_796587",
+      "original_name": "HPXgPh1boAEs2-w.jpg",
+      "processed_at": "2026-08-19T09:49:38.796587+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXgPh1boAEs2-w.jpg"
+    },
+    "5da40d0ca03d074f06b4582b4b56e97d0d0a8afb66b60537317f06efaca7aec3": {
+      "record_id": "chart_20260819_151955_703121",
+      "original_name": "HPXKRIDbUAI7jwP.jpg",
+      "processed_at": "2026-08-19T09:49:55.703121+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXKRIDbUAI7jwP.jpg"
+    },
+    "fcfaf4bcf1e6c49f4b729cc296a458ca36ddc4019f2f2decdc0e2eedd4e34467": {
+      "record_id": "chart_20260819_152016_368077",
+      "original_name": "HPXOIlaaQAANWHY.jpg",
+      "processed_at": "2026-08-19T09:50:16.368077+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXOIlaaQAANWHY.jpg"
+    },
+    "aad5c57cec50c1bf2e5dba7a968cf50ccf0460ee1eb762d88bebccd5ad2d1e66": {
+      "record_id": "chart_20260819_152036_188543",
+      "original_name": "HPXTas7aMAAF9_S.png",
+      "processed_at": "2026-08-19T09:50:36.199248+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXTas7aMAAF9_S.png"
+    },
+    "3743238c65ddb019fa8521b173361cd7cc9ac661b24c6970c1a80b2137f7321f": {
+      "record_id": "chart_20260819_152055_144434",
+      "original_name": "HPxx2m-bAAAoFwR.jpg",
+      "processed_at": "2026-08-19T09:50:55.148461+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPxx2m-bAAAoFwR.jpg"
+    },
+    "e5469c6e39a567fff2362bbc2c8163c183f5813673745d1ca7155d49c99849df": {
+      "record_id": "chart_20260819_152110_430084",
+      "original_name": "HPXYu2CbAAAxH5q.jpg",
+      "processed_at": "2026-08-19T09:51:10.434114+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HPXYu2CbAAAxH5q.jpg"
+    },
+    "37076f306dd2946ec8be949d7675abc3922ed0e2c2a669407b14350de5c0b44f": {
+      "record_id": "chart_20260819_152126_410268",
+      "original_name": "HQAOUFtawAAANGO.jpg",
+      "processed_at": "2026-08-19T09:51:26.411264+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQAOUFtawAAANGO.jpg"
+    },
+    "628dc54706bcdaa4e080b8e9adfc147ddaaf7b8c8809f0a691aed9b280b08117": {
+      "record_id": "chart_20260819_152145_253269",
+      "original_name": "HQAZt6BaEAAp-iG.jpg",
+      "processed_at": "2026-08-19T09:51:45.253269+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQAZt6BaEAAp-iG.jpg"
+    },
+    "dd7cb5534d44877f6364cacfcbd7c0c4e6c51f790b82cb64486c9f65928d2956": {
+      "record_id": "chart_20260819_152200_035101",
+      "original_name": "HQBDwBqagAEvFHd.jpg",
+      "processed_at": "2026-08-19T09:52:00.037105+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBDwBqagAEvFHd.jpg"
+    },
+    "6454b5a33ec73eba124f11786ca211e791e00c478facc7da67bea7c7c5a1f432": {
+      "record_id": "chart_20260819_152220_837458",
+      "original_name": "HQBDwBsacAAEWXe.jpg",
+      "processed_at": "2026-08-19T09:52:20.841827+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBDwBsacAAEWXe.jpg"
+    },
+    "e0a83861c7fd5de1d754689a9d1737684a8e2dffb2b88f68e1b330bf85fd6f6d": {
+      "record_id": "chart_20260819_152246_288863",
+      "original_name": "HQBDwBsaYAI9Au9.jpg",
+      "processed_at": "2026-08-19T09:52:46.302774+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBDwBsaYAI9Au9.jpg"
+    },
+    "103f6e7b314716917a29562b5f01022394a779e4f7ecda15ce321c7bafc6a7f4": {
+      "record_id": "chart_20260819_152300_097247",
+      "original_name": "HQBLTCAbgAUWtbz.jpg",
+      "processed_at": "2026-08-19T09:53:00.097247+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBLTCAbgAUWtbz.jpg"
+    },
+    "4c17ce31d4d49312865f7b645bf8c52244909d5480018a3806bd359870b74039": {
+      "record_id": "chart_20260819_152322_079022",
+      "original_name": "HQBNvxHakAAoIrR.jpg",
+      "processed_at": "2026-08-19T09:53:22.177400+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBNvxHakAAoIrR.jpg"
+    },
+    "6ed0521855624c00a957196dcff169ca999a0ded94f2f619e28a85a62dde608f": {
+      "record_id": "chart_20260819_152339_888923",
+      "original_name": "HQBoMnAbsAA6LKR.png",
+      "processed_at": "2026-08-19T09:53:39.888923+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQBoMnAbsAA6LKR.png"
+    },
+    "7f9ae0d020039a6f87f32f1aaddc1c6df48e07e6bb44fa612adc88a5df12c5c7": {
+      "record_id": "chart_20260819_152403_571642",
+      "original_name": "HQD-WVPbYAAg4eM.jpg",
+      "processed_at": "2026-08-19T09:54:03.574594+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD-WVPbYAAg4eM.jpg"
+    },
+    "b8f0e9e37b32af8ce832efd4bed91f66f3a294108c7808bf606c2b2004dc0ed2": {
+      "record_id": "chart_20260819_152423_865664",
+      "original_name": "HQD0u15a8AAM7UZ.jpg",
+      "processed_at": "2026-08-19T09:54:23.866663+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD0u15a8AAM7UZ.jpg"
+    },
+    "d06fd6974a558a7b893d7a54c4d660d46934ba356d4a873d752dee0149433979": {
+      "record_id": "chart_20260819_152438_323955",
+      "original_name": "HQD1YjnbcAAfyXi.jpg",
+      "processed_at": "2026-08-19T09:54:38.326950+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD1YjnbcAAfyXi.jpg"
+    },
+    "1f715917d7555f6311cb1d1964a76a22543e13a106e328e58cf563d405d34fbb": {
+      "record_id": "chart_20260819_152454_535185",
+      "original_name": "HQD2ujfbkAA8HQY.jpg",
+      "processed_at": "2026-08-19T09:54:54.537144+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD2ujfbkAA8HQY.jpg"
+    },
+    "a546550e53cd8562279776b04d24962587e9ef12553fbab1cd4e3aebb46c2669": {
+      "record_id": "chart_20260819_152507_434037",
+      "original_name": "HQD6t-lbQAAXqLM.jpg",
+      "processed_at": "2026-08-19T09:55:07.536193+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD6t-lbQAAXqLM.jpg"
+    },
+    "c35d5f9375955e252ae40d6c7b687aaab173fe1916a8a24f44cb3ffd8824963d": {
+      "record_id": "chart_20260819_152523_035007",
+      "original_name": "HQD6yxRaUAAjqjY.jpg",
+      "processed_at": "2026-08-19T09:55:23.036994+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQD6yxRaUAAjqjY.jpg"
+    },
+    "70e89bd1be26fe3d59d4182e5428d65f6f5253ff2322ad935eb2b7dc5d781f05": {
+      "record_id": "chart_20260819_152542_652154",
+      "original_name": "HQDy95bbkAA4fXA.jpg",
+      "processed_at": "2026-08-19T09:55:42.653160+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQDy95bbkAA4fXA.jpg"
+    },
+    "19c4c6915053f340d3b017938698a453a47d128567f1e3333ddf0eac46f17d8e": {
+      "record_id": "chart_20260819_152558_316592",
+      "original_name": "HQDz4LCaUAABTkC.jpg",
+      "processed_at": "2026-08-19T09:55:58.318081+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQDz4LCaUAABTkC.jpg"
+    },
+    "85015a0fa6dc485be274c691fb9c6a43ac7f331f3cba3ede3efa5bc1f9d0f500": {
+      "record_id": "chart_20260819_152615_852191",
+      "original_name": "HQEDo8ebcAAiprk.jpg",
+      "processed_at": "2026-08-19T09:56:15.856189+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\HQEDo8ebcAAiprk.jpg"
+    },
+    "5a744dab7db130b1682536dbe851ec1e4923450180d032351ad10ae82f0603ed": {
+      "record_id": "chart_20260819_152638_916882",
+      "original_name": "Screenshot 2026-08-19 102704.png",
+      "processed_at": "2026-08-19T09:56:38.918882+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 102704.png"
+    },
+    "ff33fefc9d8120b63f4b40a48ab55e49a0d1d0787e0b52bed33dd752ee159c63": {
+      "record_id": "chart_20260819_152659_253106",
+      "original_name": "Screenshot 2026-08-19 102744.png",
+      "processed_at": "2026-08-19T09:56:59.254110+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 102744.png"
+    },
+    "ce7534984ea61f5c766a91ab27f999c6e104b52c2b6d55860be843b8c1e2a4bf": {
+      "record_id": "chart_20260819_152718_289276",
+      "original_name": "Screenshot 2026-08-19 104556.png",
+      "processed_at": "2026-08-19T09:57:18.290578+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 104556.png"
+    },
+    "90fdf227de6344f80f35f7f83c810398ae5bfc570d6857b86b81155f1a7bb855": {
+      "record_id": "chart_20260819_152738_999716",
+      "original_name": "Screenshot 2026-08-19 104621.png",
+      "processed_at": "2026-08-19T09:57:39.001755+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 104621.png"
+    },
+    "6e03a90a98a366faba7f11874330927e5512432685a13e4ef05f88c43201949d": {
+      "record_id": "chart_20260819_152802_621009",
+      "original_name": "Screenshot 2026-08-19 110311.png",
+      "processed_at": "2026-08-19T09:58:02.626173+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 110311.png"
+    },
+    "fa46b66b432ebcaa8ac8f8068c0b6650544e81d676b40aadcfa77a3c9d5ae297": {
+      "record_id": "chart_20260819_152830_791637",
+      "original_name": "Screenshot 2026-08-19 110454.png",
+      "processed_at": "2026-08-19T09:58:30.795589+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 110454.png"
+    },
+    "a8012a3e655fa493187a63f0da5f2052ec35d55f6264140356c8ed367fd512af": {
+      "record_id": "chart_20260819_152850_384000",
+      "original_name": "Screenshot 2026-08-19 115815.png",
+      "processed_at": "2026-08-19T09:58:50.385961+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 115815.png"
+    },
+    "3fd9749d838b25968c811eb78e664be238cdb83abca5d2344b7b9df138e5ea87": {
+      "record_id": "chart_20260819_152914_545605",
+      "original_name": "Screenshot 2026-08-19 115912.png",
+      "processed_at": "2026-08-19T09:59:14.546614+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 115912.png"
+    },
+    "33506e28a523126f8dd5ff7623e40fdd5d8909a7df6ef3d7bd2805adcc084369": {
+      "record_id": "chart_20260819_152933_326875",
+      "original_name": "Screenshot 2026-08-19 120245.png",
+      "processed_at": "2026-08-19T09:59:33.327877+00:00",
+      "status": "review",
+      "destination": "F:\\projects\\TinyMarketLLM\\charts\\review\\Screenshot 2026-08-19 120245.png"
+    }
+  }
+}
