@@ -28,6 +28,9 @@ class BacktestResultV2:
 
     decision_timestamp: object
 
+    # Evaluation horizon
+    horizon_candles: int
+
     # Prediction
     predicted_direction: str
     predicted_move_pct: float
@@ -61,10 +64,13 @@ class BacktestEngineV2:
     """
     Walk-forward historical evaluator.
 
-    IMPORTANT:
+    evaluation_horizon explicitly defines how many future
+    candles are evaluated.
 
-    Actual market outcomes are calculated independently
-    of the prediction.
+    Examples:
+        1  = next candle
+        5  = next five candles
+        10 = next ten candles
 
     This module does NOT:
         - call Dhan
@@ -80,6 +86,17 @@ class BacktestEngineV2:
         sustain_bars: int = 3,
         move_tolerance_pct: float = 0.5,
     ):
+
+        if evaluation_horizon < 1:
+            raise ValueError(
+                "evaluation_horizon must be >= 1."
+            )
+
+        if sustain_bars < 1:
+            raise ValueError(
+                "sustain_bars must be >= 1."
+            )
+
         self.evaluation_horizon = evaluation_horizon
         self.sustain_bars = sustain_bars
         self.move_tolerance_pct = move_tolerance_pct
@@ -117,6 +134,9 @@ class BacktestEngineV2:
                 index + 1:
                 index + 1 + self.evaluation_horizon
             ]
+
+            if len(future) < self.evaluation_horizon:
+                continue
 
             prediction = predictor.predict(
                 current
@@ -203,10 +223,18 @@ class BacktestEngineV2:
             downside.values.argmin() + 1
         )
 
+        # For a 1-candle horizon, sustainability is
+        # evaluated over that single candle.
+        sustain_bars = min(
+            self.sustain_bars,
+            len(future),
+        )
+
         upside_sustained = (
             self._sustained_up(
                 entry,
                 future,
+                sustain_bars,
             )
         )
 
@@ -214,6 +242,7 @@ class BacktestEngineV2:
             self._sustained_down(
                 entry,
                 future,
+                sustain_bars,
             )
         )
 
@@ -247,6 +276,9 @@ class BacktestEngineV2:
 
             decision_timestamp=
                 current["timestamp"],
+
+            horizon_candles=
+                self.evaluation_horizon,
 
             predicted_direction=
                 prediction.direction,
@@ -298,12 +330,16 @@ class BacktestEngineV2:
         self,
         entry: float,
         future: pd.DataFrame,
+        sustain_bars: int,
     ) -> bool:
+
+        if len(future) < sustain_bars:
+            return False
 
         for start in range(
             0,
             len(future)
-            - self.sustain_bars
+            - sustain_bars
             + 1,
         ):
 
@@ -311,7 +347,7 @@ class BacktestEngineV2:
                 "close"
             ].iloc[
                 start:
-                start + self.sustain_bars
+                start + sustain_bars
             ]
 
             if (
@@ -326,12 +362,16 @@ class BacktestEngineV2:
         self,
         entry: float,
         future: pd.DataFrame,
+        sustain_bars: int,
     ) -> bool:
+
+        if len(future) < sustain_bars:
+            return False
 
         for start in range(
             0,
             len(future)
-            - self.sustain_bars
+            - sustain_bars
             + 1,
         ):
 
@@ -339,7 +379,7 @@ class BacktestEngineV2:
                 "close"
             ].iloc[
                 start:
-                start + self.sustain_bars
+                start + sustain_bars
             ]
 
             if (
@@ -372,11 +412,14 @@ class BacktestEngineV2:
 
             return False
 
-        if (
-            favorable
-            < prediction.expected_move_pct
-        ):
+        # Compare magnitude using absolute expected
+        # move. DOWN predictions may have negative
+        # expected_move_pct values.
+        expected_move = abs(
+            prediction.expected_move_pct
+        )
 
+        if favorable < expected_move:
             return False
 
         if prediction.direction == "UP":

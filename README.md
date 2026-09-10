@@ -190,3 +190,61 @@ RSI gets the same structured swing representation. A separate price-vs-RSI relat
 record captures potential divergence without forcing the future model to parse English prose.
 
 Visible levels distinguish exact printed values from approximate visual levels.
+
+## Three-stock market scanner
+
+The first numerical scanner is intentionally limited to `GRASIM`, `RELIANCE`,
+and `TCS`. It has no Firebase, Supabase, or OpenAI runtime dependency. Dhan is
+used only to refresh portable local OHLC files; model training and reports use
+the saved data.
+
+Install the numerical dependencies:
+
+```powershell
+cd F:\projects\TinyMarketLLM
+python -m pip install -r requirements.txt
+```
+
+Put a current Dhan client ID and token in the local `.env`, then download or
+incrementally refresh the three datasets:
+
+```powershell
+python scripts\update_three_stocks.py
+```
+
+Run a leakage-safe fixed-cutoff experiment. This trains only on candles through
+March and evaluates later candles as unseen data:
+
+```powershell
+python scripts\run_market_scanner.py --train-end 2025-03-31 --test-end 2025-09-30
+```
+
+To train on only January-March and evaluate only April-September, provide all
+four boundaries explicitly:
+
+```powershell
+python scripts\run_market_scanner.py --train-start 2026-01-01 --train-end 2026-03-31 --test-start 2026-04-01 --test-end 2026-09-30
+```
+
+Analyse one configured stock:
+
+```powershell
+python scripts\run_market_scanner.py --symbol RELIANCE
+```
+
+Scan all three and create the latest zero-to-three candidate report:
+
+```powershell
+python scripts\run_market_scanner.py
+```
+
+Reports are written as CSV, JSON, and a locally openable HTML dashboard under
+`reports\daily`. Full scans use `latest_all`; named scans use a separate
+`latest_SYMBOL` filename, so neither overwrites the other. `WAIT` is a valid
+result; the scanner never forces a BUY or
+SELL merely to fill a quota. Outputs are research/paper-trading candidates and
+not guaranteed trades.
+
+Historical summaries include majority-baseline accuracy and mark an
+underperforming model as `REJECTED`. A rejected model must not be promoted to
+paper-trade or live-trade use.

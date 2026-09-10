@@ -100,6 +100,94 @@ def main():
         split.train
     )
 
+    print()
+    print(
+        "[4A] Analyzing supporting evidence..."
+    )
+
+    evidence = (
+        engine.analyze_supporting_evidence(
+            split.train,
+            supporting_minimum_samples=20,
+        )
+    )
+
+    print(
+        f"[OK] Core states analyzed: "
+        f"{len(evidence)}"
+    )
+
+    for state_key, state_data in evidence.items():
+
+        print()
+        print("=" * 70)
+        print(
+            f"CORE STATE: {state_key}"
+        )
+        print(
+            f"SAMPLES: {state_data['samples']}"
+        )
+
+        print(
+            "BASE: "
+            f"UP={state_data['base_probability']['UP']:.2%} "
+            f"DOWN={state_data['base_probability']['DOWN']:.2%} "
+            f"FLAT={state_data['base_probability']['FLAT']:.2%}"
+        )
+
+        for feature, values in (
+            state_data["features"].items()
+        ):
+
+            print()
+            print(
+                f"  FEATURE: {feature}"
+            )
+
+            for value, stats in values.items():
+
+                probability = (
+                    stats[
+                        "direction_probability"
+                    ]
+                )
+
+                delta = stats["delta"]
+
+                print(
+                    f"    {value}: "
+                    f"samples={stats['samples']} "
+                    f"UP={probability['UP']:.2%} "
+                    f"DOWN={probability['DOWN']:.2%} "
+                    f"FLAT={probability['FLAT']:.2%} "
+                    f"ΔUP={delta['UP']:+.2%} "
+                    f"ΔDOWN={delta['DOWN']:+.2%}"
+                )
+
+        print()
+        print(
+            f"Core state: {state_key}"
+        )
+
+        print(
+            f"Samples: "
+            f"{state_data['samples']}"
+        )
+
+        print(
+            "Base probability: "
+            f"{state_data['base_probability']}"
+        )
+
+        for feature, values in (
+            state_data["features"].items()
+        ):
+
+            print(
+                f"  {feature}: "
+                f"{len(values)} observed values"
+            )
+
     patterns = model.get(
         "patterns",
         [],
@@ -107,6 +195,98 @@ def main():
 
     print(
         f"[OK] Patterns learned: {len(patterns)}"
+    )
+
+    print()
+    print(
+        "[4B] Training evidence model..."
+    )
+
+    evidence_model = (
+        engine.train_with_evidence(
+            split.train,
+            minimum_evidence_samples=20,
+        )
+    )
+
+    print(
+        "[OK] Evidence patterns: "
+        f"{len(evidence_model['patterns'])}"
+    )
+
+    print()
+    print(
+        "[4C] Comparing core vs evidence..."
+    )
+
+    core_correct = 0
+    core_evaluated = 0
+
+    evidence_correct = 0
+    evidence_evaluated = 0
+
+    for _, row in split.validation.iterrows():
+
+        actual = row["label_direction"]
+
+        # Existing/core model
+        core_prediction = engine.predict(
+            model,
+            row,
+        )
+
+        if core_prediction is not None:
+            core_evaluated += 1
+
+            if (
+                core_prediction.direction
+                == actual
+            ):
+                core_correct += 1
+
+        # Evidence model
+        evidence_prediction = (
+            engine.predict_with_evidence(
+                evidence_model,
+                row,
+            )
+        )
+
+        if evidence_prediction.confidence > 0:
+
+            evidence_evaluated += 1
+
+            if (
+                evidence_prediction.direction
+                == actual
+            ):
+                evidence_correct += 1
+
+    core_accuracy = (
+        core_correct / core_evaluated
+        if core_evaluated
+        else 0.0
+    )
+
+    evidence_accuracy = (
+        evidence_correct / evidence_evaluated
+        if evidence_evaluated
+        else 0.0
+    )
+
+    print(
+        f"Core accuracy     : "
+        f"{core_accuracy:.2%}"
+    )
+
+    print(
+        f"Evidence accuracy : "
+        f"{evidence_accuracy:.2%}"
+    )
+
+    print(
+        f"Improvement       : "
+        f"{evidence_accuracy - core_accuracy:+.2%}"
     )
 
     print()

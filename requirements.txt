@@ -1,2 +1,7 @@
 openai>=1.100.0
 python-dotenv>=1.0.0
+pandas>=2.2.0
+numpy>=2.0.0
+scikit-learn>=1.5.0
+pyarrow>=17.0.0
+dhanhq>=2.0.2

@@ -1,0 +1,17 @@
+{
+  "symbols": ["GRASIM", "RELIANCE", "TCS"],
+  "timeframe": "1D",
+  "prediction_horizon_candles": 1,
+  "flat_move_threshold_pct": 0.5,
+  "minimum_confidence": 0.58,
+  "minimum_training_rows": 120,
+  "maximum_candidates": 3,
+  "risk_per_trade_pct": 0.5,
+  "storage": {
+    "format": "parquet",
+    "root": "data/market"
+  },
+  "reports": {
+    "root": "reports/daily"
+  }
+}

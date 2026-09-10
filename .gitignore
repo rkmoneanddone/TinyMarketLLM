@@ -38,6 +38,9 @@ dist/
 # Logs
 *.log
 
+# Generated scanner reports
+reports/
+
 # Generated / temporary chart images
 charts/
 

@@ -11,6 +11,7 @@ STATE_COLUMNS_V2 = [
     "low",
     "close",
     "volume",
+
     # Price Action
     "structure_event",
     "structure",
@@ -21,6 +22,27 @@ STATE_COLUMNS_V2 = [
     "candle_body_pct",
     "pullback_from_high_pct",
     "recovery_from_low_pct",
+
+    # Market Location
+    "previous_high",
+    "previous_low",
+    "distance_to_previous_high_pct",
+    "distance_to_previous_low_pct",
+    "above_previous_high",
+    "below_previous_low",
+    "previous_high_broken",
+    "previous_low_broken",
+    "near_previous_high",
+    "near_previous_low",
+    "new_high",
+    "new_low",
+    "bounce_from_low_pct",
+    "rejection_from_high_pct",
+    "support_status",
+    "resistance_status",
+    "bounce_signal",
+    "continuation_signal",
+
     # RSI
     "rsi",
     "rsi_direction",
@@ -35,18 +57,32 @@ STATE_COLUMNS_V2 = [
 
 RESULT_COLUMNS = [
     "decision_timestamp",
+    "horizon_candles",
+
     "predicted_direction",
     "predicted_move_pct",
     "predicted_duration",
     "prediction_confidence",
+
     "actual_direction",
     "actual_move_pct",
-    "actual_duration",
+
     "actual_upside_move_pct",
     "actual_downside_move_pct",
-    "sustained",
+
+    "time_to_upside_peak",
+    "time_to_downside_peak",
+
+    "upside_sustained",
+    "downside_sustained",
+
+    "favorable_move_pct",
+    "adverse_move_pct",
+
     "passed",
 ]
+
+
 
 
 class OutcomeEngineV2:
@@ -99,14 +135,35 @@ class OutcomeEngineV2:
         # Actual outcomes become the learning labels.
         dataset["label_direction"] = dataset["actual_direction"]
 
+        dataset["horizon_candles"] = dataset["horizon_candles"].astype(int)
         dataset["label_move_pct"] = dataset["actual_move_pct"]
         dataset["label_favorable_move_pct"] = dataset["actual_upside_move_pct"]
 
         dataset["label_adverse_move_pct"] = dataset["actual_downside_move_pct"]
 
-        dataset["label_duration"] = dataset["actual_duration"]
+        if dataset["label_direction"].eq("UP").any():
+            dataset["label_duration"] = dataset.apply(
+                lambda row: (
+                    row["time_to_upside_peak"]
+                    if row["label_direction"] == "UP"
+                    else row["time_to_downside_peak"]
+                    if row["label_direction"] == "DOWN"
+                    else 1
+                ),
+                axis=1,
+        )
 
-        dataset["label_sustained"] = dataset["sustained"]
+        dataset["label_sustained"] = (
+            (
+                (dataset["label_direction"] == "UP")
+                & dataset["upside_sustained"]
+            )
+            |
+            (
+                (dataset["label_direction"] == "DOWN")
+                & dataset["downside_sustained"]
+            )
+        )
 
         dataset["label_passed"] = dataset["passed"]
 
@@ -117,6 +174,7 @@ class OutcomeEngineV2:
         output_columns = [
             "schema_version",
             "decision_timestamp",
+            "horizon_candles",
             # Market state
             "open",
             "high",
@@ -133,6 +191,25 @@ class OutcomeEngineV2:
             "candle_body_pct",
             "pullback_from_high_pct",
             "recovery_from_low_pct",
+            # Market Location
+            "previous_high",
+            "previous_low",
+            "distance_to_previous_high_pct",
+            "distance_to_previous_low_pct",
+            "above_previous_high",
+            "below_previous_low",
+            "previous_high_broken",
+            "previous_low_broken",
+            "near_previous_high",
+            "near_previous_low",
+            "new_high",
+            "new_low",
+            "bounce_from_low_pct",
+            "rejection_from_high_pct",
+            "support_status",
+            "resistance_status",
+            "bounce_signal",
+            "continuation_signal",
             # RSI
             "rsi",
             "rsi_direction",
@@ -209,3 +286,8 @@ class OutcomeEngineV2:
 
         if results.empty:
             raise ValueError("Backtest results are empty.")
+
+        if (results["horizon_candles"] < 1).any():
+            raise ValueError(
+                "horizon_candles must be >= 1."
+            )

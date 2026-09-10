@@ -5,7 +5,14 @@ import pandas as pd
 
 class FeatureEngineV2:
     """
-    Price Action + RSI feature engine.
+    Price Action + RSI + Market Location feature engine.
+
+    Includes:
+    - Price action
+    - Confirmed swing structure
+    - Support / resistance context
+    - Bounce / continuation evidence
+    - RSI
 
     No Moving Average.
     No Dhan dependency.
@@ -13,23 +20,58 @@ class FeatureEngineV2:
     No backtesting.
     """
 
+    MARKET_LOCATION_COLUMNS = [
+        "previous_high",
+        "previous_low",
+        "distance_to_previous_high_pct",
+        "distance_to_previous_low_pct",
+        "above_previous_high",
+        "below_previous_low",
+        "previous_high_broken",
+        "previous_low_broken",
+        "near_previous_high",
+        "near_previous_low",
+        "new_high",
+        "new_low",
+        "bounce_from_low_pct",
+        "rejection_from_high_pct",
+        "support_status",
+        "resistance_status",
+        "bounce_signal",
+        "continuation_signal",
+    ]
+
     def __init__(self, rsi_period: int = 14):
         self.rsi_period = rsi_period
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
+
         self._validate(data)
 
-        result = data.copy()
-        result = result.sort_values("timestamp").reset_index(drop=True)
+        result = (
+            data.copy()
+            .sort_values("timestamp")
+            .reset_index(drop=True)
+        )
 
         result = self._price_action(result)
+        result = self._market_location(result)
         result = self._rsi(result)
 
         return result
 
-    def _price_action(self, data: pd.DataFrame) -> pd.DataFrame:
+    # =========================================================
+    # PRICE ACTION
+    # =========================================================
 
-        data["price_change"] = data["close"].diff()
+    def _price_action(
+        self,
+        data: pd.DataFrame,
+    ) -> pd.DataFrame:
+
+        data["price_change"] = (
+            data["close"].diff()
+        )
 
         data["price_direction"] = "FLAT"
 
@@ -43,58 +85,128 @@ class FeatureEngineV2:
             "price_direction",
         ] = "DOWN"
 
-        data["swing_high"] = (
+        # -----------------------------------------------------
+        # Raw swings
+        # -----------------------------------------------------
+
+        swing_high = (
             (data["high"] > data["high"].shift(1))
-            & (data["high"] > data["high"].shift(-1))
+            &
+            (data["high"] > data["high"].shift(-1))
         )
 
-        data["swing_low"] = (
+        swing_low = (
             (data["low"] < data["low"].shift(1))
-            & (data["low"] < data["low"].shift(-1))
+            &
+            (data["low"] < data["low"].shift(-1))
+        )
+
+        # -----------------------------------------------------
+        # IMPORTANT:
+        #
+        # A swing becomes usable only after the following candle
+        # confirms it.
+        #
+        # Therefore:
+        #
+        # confirmed swing at candle i
+        # comes from raw swing at candle i-1.
+        #
+        # This prevents current prediction state from using
+        # the future candle.
+        # -----------------------------------------------------
+
+        confirmed_high = (
+            swing_high
+            .shift(1)
+            .fillna(False)
+            .astype(bool)
+        )
+
+        confirmed_low = (
+            swing_low
+            .shift(1)
+            .fillna(False)
+            .astype(bool)
         )
 
         previous_high = None
         previous_low = None
 
         events = []
+        previous_high_values = []
+        previous_low_values = []
 
-        for _, row in data.iterrows():
+        for index in range(len(data)):
 
             event = None
 
-            if row["swing_high"]:
-                current = row["high"]
+            if confirmed_high.iloc[index]:
+
+                swing_price = float(
+                    data["high"].iloc[index - 1]
+                )
 
                 if previous_high is None:
+
                     event = "INITIAL_H"
-                elif current > previous_high:
+
+                elif swing_price > previous_high:
+
                     event = "HH"
+
                 else:
+
                     event = "LH"
 
-                previous_high = current
+                previous_high = swing_price
 
-            elif row["swing_low"]:
-                current = row["low"]
+            if confirmed_low.iloc[index]:
+
+                swing_price = float(
+                    data["low"].iloc[index - 1]
+                )
 
                 if previous_low is None:
-                    event = "INITIAL_L"
-                elif current > previous_low:
-                    event = "HL"
-                else:
-                    event = "LL"
 
-                previous_low = current
+                    if event is None:
+                        event = "INITIAL_L"
+
+                elif swing_price > previous_low:
+
+                    if event is None:
+                        event = "HL"
+
+                else:
+
+                    if event is None:
+                        event = "LL"
+
+                previous_low = swing_price
 
             events.append(event)
+            previous_high_values.append(previous_high)
+            previous_low_values.append(previous_low)
 
         data["structure_event"] = events
 
         data["structure"] = (
-            data["structure_event"].ffill()
+            data["structure_event"]
+            .ffill()
         )
 
+        data["previous_high"] = (
+            previous_high_values
+        )
+
+        data["previous_low"] = (
+            previous_low_values
+        )
+
+        # -----------------------------------------------------
         # Recent price movement
+        # -----------------------------------------------------
+
         data["move_3_pct"] = (
             (
                 data["close"]
@@ -113,7 +225,10 @@ class FeatureEngineV2:
             * 100
         )
 
+        # -----------------------------------------------------
         # Recent range
+        # -----------------------------------------------------
+
         data["range_5_pct"] = (
             (
                 data["high"].rolling(5).max()
@@ -124,7 +239,10 @@ class FeatureEngineV2:
             * 100
         )
 
+        # -----------------------------------------------------
         # Candle body
+        # -----------------------------------------------------
+
         data["candle_body_pct"] = (
             (
                 data["close"]
@@ -134,8 +252,15 @@ class FeatureEngineV2:
             * 100
         )
 
+        # -----------------------------------------------------
         # Pullback from recent high
-        recent_high = data["high"].rolling(10).max()
+        # -----------------------------------------------------
+
+        recent_high = (
+            data["high"]
+            .rolling(10)
+            .max()
+        )
 
         data["pullback_from_high_pct"] = (
             (
@@ -146,8 +271,15 @@ class FeatureEngineV2:
             * 100
         )
 
+        # -----------------------------------------------------
         # Recovery from recent low
-        recent_low = data["low"].rolling(10).min()
+        # -----------------------------------------------------
+
+        recent_low = (
+            data["low"]
+            .rolling(10)
+            .min()
+        )
 
         data["recovery_from_low_pct"] = (
             (
@@ -160,7 +292,213 @@ class FeatureEngineV2:
 
         return data
 
-    def _rsi(self, data: pd.DataFrame) -> pd.DataFrame:
+    # =========================================================
+    # MARKET LOCATION
+    # =========================================================
+
+    def _market_location(
+        self,
+        data: pd.DataFrame,
+    ) -> pd.DataFrame:
+
+        # -----------------------------------------------------
+        # Distance to previous levels
+        # -----------------------------------------------------
+
+        data["distance_to_previous_high_pct"] = (
+            (
+                data["close"]
+                - data["previous_high"]
+            )
+            / data["previous_high"]
+            * 100
+        )
+
+        data["distance_to_previous_low_pct"] = (
+            (
+                data["close"]
+                - data["previous_low"]
+            )
+            / data["previous_low"]
+            * 100
+        )
+
+        # -----------------------------------------------------
+        # Level position
+        # -----------------------------------------------------
+
+        data["above_previous_high"] = (
+            data["previous_high"].notna()
+            &
+            (
+                data["close"]
+                > data["previous_high"]
+            )
+        )
+
+        data["below_previous_low"] = (
+            data["previous_low"].notna()
+            &
+            (
+                data["close"]
+                < data["previous_low"]
+            )
+        )
+
+        data["previous_high_broken"] = (
+            data["above_previous_high"]
+        )
+
+        data["previous_low_broken"] = (
+            data["below_previous_low"]
+        )
+
+        # -----------------------------------------------------
+        # Near levels
+        # -----------------------------------------------------
+
+        data["near_previous_high"] = (
+            data["previous_high"].notna()
+            &
+            (
+                data[
+                    "distance_to_previous_high_pct"
+                ].abs()
+                <= 2.0
+            )
+        )
+
+        data["near_previous_low"] = (
+            data["previous_low"].notna()
+            &
+            (
+                data[
+                    "distance_to_previous_low_pct"
+                ].abs()
+                <= 2.0
+            )
+        )
+
+        # -----------------------------------------------------
+        # New high / new low
+        # -----------------------------------------------------
+
+        prior_high = (
+            data["high"]
+            .shift(1)
+            .cummax()
+        )
+
+        prior_low = (
+            data["low"]
+            .shift(1)
+            .cummin()
+        )
+
+        data["new_high"] = (
+            data["high"]
+            > prior_high
+        ).fillna(False)
+
+        data["new_low"] = (
+            data["low"]
+            < prior_low
+        ).fillna(False)
+
+        # -----------------------------------------------------
+        # Intracandle recovery / rejection
+        # -----------------------------------------------------
+
+        data["bounce_from_low_pct"] = (
+            (
+                data["close"]
+                - data["low"]
+            )
+            / data["low"]
+            * 100
+        )
+
+        data["rejection_from_high_pct"] = (
+            (
+                data["high"]
+                - data["close"]
+            )
+            / data["high"]
+            * 100
+        )
+
+        # -----------------------------------------------------
+        # Support status
+        # -----------------------------------------------------
+
+        data["support_status"] = "UNKNOWN"
+
+        data.loc[
+            data["near_previous_low"],
+            "support_status",
+        ] = "NEAR_SUPPORT"
+
+        data.loc[
+            data["previous_low_broken"],
+            "support_status",
+        ] = "BROKEN"
+
+        # -----------------------------------------------------
+        # Resistance status
+        # -----------------------------------------------------
+
+        data["resistance_status"] = "UNKNOWN"
+
+        data.loc[
+            data["near_previous_high"],
+            "resistance_status",
+        ] = "NEAR_RESISTANCE"
+
+        data.loc[
+            data["previous_high_broken"],
+            "resistance_status",
+        ] = "BROKEN"
+
+        # -----------------------------------------------------
+        # Bounce / continuation
+        #
+        # RSI is intentionally not used here because _rsi()
+        # runs afterward.
+        #
+        # The initial signals are price-action signals.
+        # RSI confirmation will be added after RSI calculation.
+        # -----------------------------------------------------
+
+        data["bounce_signal"] = (
+            (
+                data["near_previous_low"]
+                |
+                data["below_previous_low"]
+            )
+            &
+            (
+                data["price_direction"] == "UP"
+            )
+        )
+
+        data["continuation_signal"] = (
+            data["previous_low_broken"]
+            &
+            (
+                data["price_direction"] == "DOWN"
+            )
+        )
+
+        return data
+
+    # =========================================================
+    # RSI
+    # =========================================================
+
+    def _rsi(
+        self,
+        data: pd.DataFrame,
+    ) -> pd.DataFrame:
 
         delta = data["close"].diff()
 
@@ -186,7 +524,9 @@ class FeatureEngineV2:
         )
 
         data.loc[
-            (avg_loss == 0) & (avg_gain > 0),
+            (avg_loss == 0)
+            &
+            (avg_gain > 0),
             "rsi",
         ] = 100
 
@@ -210,13 +550,11 @@ class FeatureEngineV2:
             data["rsi"] <= 30
         )
 
-        # RSI movement
         data["rsi_change_3"] = (
             data["rsi"]
             - data["rsi"].shift(3)
         )
 
-        # RSI zone
         data["rsi_zone"] = "NEUTRAL"
 
         data.loc[
@@ -229,7 +567,10 @@ class FeatureEngineV2:
             "rsi_zone",
         ] = "OVERSOLD"
 
-        # Simple divergence candidates.
+        # -----------------------------------------------------
+        # Divergence candidates
+        # -----------------------------------------------------
+
         data["bullish_divergence_candidate"] = (
             (data["low"] < data["low"].shift(5))
             &
@@ -242,9 +583,36 @@ class FeatureEngineV2:
             (data["rsi"] < data["rsi"].shift(5))
         )
 
+        # -----------------------------------------------------
+        # RSI-confirmed bounce / continuation
+        # -----------------------------------------------------
+
+        data["bounce_signal"] = (
+            data["bounce_signal"]
+            &
+            (
+                data["rsi_direction"] == "RISING"
+            )
+        )
+
+        data["continuation_signal"] = (
+            data["continuation_signal"]
+            &
+            (
+                data["rsi_direction"] == "FALLING"
+            )
+        )
+
         return data
 
-    def _validate(self, data: pd.DataFrame):
+    # =========================================================
+    # VALIDATION
+    # =========================================================
+
+    def _validate(
+        self,
+        data: pd.DataFrame,
+    ):
 
         required = {
             "timestamp",
@@ -255,14 +623,20 @@ class FeatureEngineV2:
             "volume",
         }
 
-        missing = required - set(data.columns)
+        missing = (
+            required
+            - set(data.columns)
+        )
 
         if missing:
+
             raise ValueError(
-                f"Missing OHLC columns: {sorted(missing)}"
+                f"Missing OHLC columns: "
+                f"{sorted(missing)}"
             )
 
         if data.empty:
+
             raise ValueError(
                 "Feature Engine received empty data."
             )
