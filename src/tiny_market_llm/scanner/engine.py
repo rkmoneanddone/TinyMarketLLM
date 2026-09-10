@@ -215,6 +215,83 @@ class TinyMarketScanner:
         }
         return result, summary
 
+    def daily_walk_forward_test(
+        self,
+        frames: dict[str, pd.DataFrame],
+        test_start: str | pd.Timestamp,
+        test_end: str | pd.Timestamp,
+        training_years: int = 3,
+    ) -> tuple[pd.DataFrame, dict]:
+        """Retrain before every test day using only information then available.
+
+        Features are prepared once for speed. Each fold purges training labels
+        whose outcome timestamp reaches into the prediction day, preventing
+        future leakage while closely matching a daily production run.
+        """
+        if training_years < 1:
+            raise ValueError("training_years must be at least 1.")
+        prepared = self._combine(frames)
+        start = self._coerce_cutoff(test_start, prepared["timestamp"])
+        end = self._coerce_cutoff(test_end, prepared["timestamp"])
+        if start > end:
+            raise ValueError("test_start must not be after test_end.")
+
+        test_dates = (
+            prepared.loc[
+                prepared["timestamp"].between(start, end) & prepared["actual"].notna(),
+                "timestamp",
+            ]
+            .drop_duplicates()
+            .sort_values()
+        )
+        if test_dates.empty:
+            raise ValueError("No labelled rows exist inside the walk-forward window.")
+
+        predictions: list[pd.DataFrame] = []
+        folds: list[dict] = []
+        skipped: list[dict] = []
+        for fold_number, prediction_time in enumerate(test_dates, start=1):
+            label_cutoff = prediction_time - pd.Timedelta(nanoseconds=1)
+            rolling_start = prediction_time - pd.DateOffset(years=training_years)
+            train = prepared[
+                (prepared["timestamp"] >= rolling_start)
+                & (prepared["timestamp"] < prediction_time)
+                & prepared["actual"].notna()
+            ]
+            test = prepared[prepared["timestamp"] == prediction_time]
+            try:
+                models = self._fit_horizon_models(train, label_cutoff=label_cutoff)
+            except ValueError as error:
+                skipped.append({"timestamp": str(prediction_time), "reason": str(error)})
+                continue
+            fold_rows = self._predictions(models, test)
+            fold_rows.insert(0, "fold", fold_number)
+            predictions.append(fold_rows)
+            folds.append({
+                "fold": fold_number,
+                "prediction_time": str(prediction_time),
+                "training_start": str(train["timestamp"].min()),
+                "training_end": str(train["timestamp"].max()),
+                "training_rows": int(len(train)),
+                "test_rows": int(len(test)),
+            })
+
+        if not predictions:
+            raise ValueError("No walk-forward fold had enough trainable history.")
+        result = pd.concat(predictions, ignore_index=True)
+        summary = self._quality_summary(result)
+        summary.update({
+            "mode": "daily_walk_forward",
+            "test_start": str(result["timestamp"].min()),
+            "test_end": str(result["timestamp"].max()),
+            "training_years": training_years,
+            "fold_count": len(folds),
+            "skipped_fold_count": len(skipped),
+            "folds": folds,
+            "skipped_folds": skipped,
+        })
+        return result, summary
+
     def scan_latest(self, frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
         prepared = self._combine(frames)
         labelled = prepared[prepared["actual"].notna()]
@@ -306,6 +383,48 @@ class TinyMarketScanner:
         if not items:
             raise ValueError("At least one stock dataset is required.")
         return pd.concat(items, ignore_index=True).dropna(subset=FEATURE_COLUMNS)
+
+    def _quality_summary(self, result: pd.DataFrame) -> dict:
+        correct = result["prediction"] == result["actual"]
+        accuracy = float(correct.mean())
+        balanced_accuracy = float(balanced_accuracy_score(result["actual"], result["prediction"]))
+        majority_baseline = float(result["actual"].value_counts(normalize=True).max())
+        directional = result[result["decision"].isin(["BUY", "SELL"])]
+        resolved = directional[directional["trade_outcome"].isin(["TARGET", "STOP"])]
+        directional_accuracy = float((directional["prediction"] == directional["actual"]).mean()) if len(directional) else None
+        target_rate = float((resolved["trade_outcome"] == "TARGET").mean()) if len(resolved) else None
+        accuracy_low, accuracy_high = self._wilson_interval(int(correct.sum()), len(result))
+        target_low, target_high = self._wilson_interval(int((resolved["trade_outcome"] == "TARGET").sum()), len(resolved))
+        trade_symbols = int(directional["symbol"].nunique())
+        predictive_edge = accuracy_low > majority_baseline and balanced_accuracy > (1 / 3)
+        trade_edge = (
+            len(resolved) >= self.config.minimum_resolved_trades
+            and trade_symbols >= self.config.minimum_trade_symbols
+            and target_low is not None and target_low > 0.5
+        )
+        return {
+            "unseen_rows": int(len(result)), "accuracy": accuracy,
+            "accuracy_ci_95_low": accuracy_low, "accuracy_ci_95_high": accuracy_high,
+            "balanced_accuracy": balanced_accuracy,
+            "majority_baseline_accuracy": majority_baseline,
+            "beats_majority_baseline": accuracy > majority_baseline,
+            "predictive_edge": predictive_edge, "trade_edge": trade_edge,
+            "model_status": "CANDIDATE" if predictive_edge and trade_edge else "REJECTED",
+            "directional_rows": int(len(directional)), "directional_accuracy": directional_accuracy,
+            "resolved_trades": int(len(resolved)), "target_before_stop_rate": target_rate,
+            "target_rate_ci_95_low": target_low, "target_rate_ci_95_high": target_high,
+            "trade_symbols": trade_symbols,
+            "ambiguous_trades": int((directional["trade_outcome"] == "AMBIGUOUS").sum()),
+            "symbol_metrics": {
+                symbol: {
+                    "rows": int(len(group)),
+                    "accuracy": float((group["prediction"] == group["actual"]).mean()),
+                    "majority_baseline_accuracy": float(group["actual"].value_counts(normalize=True).max()),
+                    "trades": int(group["decision"].isin(["BUY", "SELL"]).sum()),
+                }
+                for symbol, group in result.groupby("symbol")
+            },
+        }
 
     def _ensure_trainable(self, train: pd.DataFrame, label: str = "actual") -> None:
         if len(train) < self.config.minimum_training_rows:

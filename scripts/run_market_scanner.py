@@ -92,6 +92,8 @@ def main() -> None:
     parser.add_argument("--train-end", help="Run fixed-cutoff unseen historical test, e.g. 2025-03-31")
     parser.add_argument("--test-start", help="Optional first unseen-test date, e.g. 2026-04-01")
     parser.add_argument("--test-end", help="Optional final unseen-test date")
+    parser.add_argument("--walk-forward", action="store_true", help="Retrain before each test day")
+    parser.add_argument("--training-years", type=int, default=3, help="Rolling history for walk-forward training")
     args = parser.parse_args()
 
     config = load_configuration()
@@ -100,7 +102,17 @@ def main() -> None:
         frames = {args.symbol: frames[args.symbol]}
     scanner = scanner_from(config)
 
-    if args.train_end:
+    if args.walk_forward:
+        if not args.test_start or not args.test_end:
+            parser.error("--walk-forward requires --test-start and --test-end")
+        rows, summary = scanner.daily_walk_forward_test(
+            frames,
+            test_start=args.test_start,
+            test_end=args.test_end,
+            training_years=args.training_years,
+        )
+        name = f"walkforward_daily_{args.training_years}y_{args.test_start}_to_{args.test_end}"
+    elif args.train_end:
         rows, summary = scanner.historical_test(
             frames,
             train_end=args.train_end,

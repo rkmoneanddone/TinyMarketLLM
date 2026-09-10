@@ -78,6 +78,18 @@ class ScannerTests(unittest.TestCase):
             self.assertGreater(len(crossing), 0)
             self.assertTrue((eligible[f"label_timestamp_{horizon}"] <= cutoff).all())
 
+    def test_daily_walk_forward_has_one_prediction_per_symbol_and_day(self):
+        result, summary = self.scanner.daily_walk_forward_test(
+            self.frames,
+            test_start="2025-01-01",
+            test_end="2025-03-31",
+            training_years=1,
+        )
+        self.assertFalse(result.duplicated(["timestamp", "symbol"]).any())
+        self.assertTrue((result.groupby("timestamp")["symbol"].nunique() == 3).all())
+        self.assertEqual(summary["fold_count"], result["timestamp"].nunique())
+        self.assertEqual(summary["mode"], "daily_walk_forward")
+
     def test_missing_ohlc_is_rejected(self):
         with self.assertRaises(ValueError):
             self.scanner.prepare(pd.DataFrame({"close": [1.0]}))

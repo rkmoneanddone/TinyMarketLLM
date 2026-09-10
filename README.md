@@ -226,6 +226,17 @@ four boundaries explicitly:
 python scripts\run_market_scanner.py --train-start 2026-01-01 --train-end 2026-03-31 --test-start 2026-04-01 --test-end 2026-09-30
 ```
 
+For the more realistic daily walk-forward test, retrain before every trading
+day using only the preceding rolling history:
+
+```powershell
+python scripts\run_market_scanner.py --walk-forward --training-years 3 --test-start 2026-04-01 --test-end 2026-09-30
+```
+
+This is the preferred validation mode for daily trade ideas. Intraday/hourly
+signals require separate intraday OHLC data and a separately validated model;
+daily and hourly candles are not mixed in one learner.
+
 Analyse one configured stock:
 
 ```powershell
