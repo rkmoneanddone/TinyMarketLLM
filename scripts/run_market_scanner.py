@@ -40,9 +40,13 @@ def load_frames(config: dict) -> dict[str, pd.DataFrame]:
 def scanner_from(config: dict) -> TinyMarketScanner:
     return TinyMarketScanner(ScannerConfig(
         horizon=config["prediction_horizon_candles"],
+        horizons=tuple(config["prediction_horizons"]),
         flat_threshold_pct=config["flat_move_threshold_pct"],
         minimum_confidence=config["minimum_confidence"],
         minimum_training_rows=config["minimum_training_rows"],
+        minimum_horizon_agreement=config["minimum_horizon_agreement"],
+        target_atr_multiple=config["target_atr_multiple"],
+        stop_atr_multiple=config["stop_atr_multiple"],
     ))
 
 

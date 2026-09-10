@@ -23,10 +23,14 @@ FEATURE_COLUMNS = [
 
 @dataclass(frozen=True)
 class ScannerConfig:
-    horizon: int = 1
+    horizon: int = 3
+    horizons: tuple[int, ...] = (1, 3, 5)
     flat_threshold_pct: float = 0.5
     minimum_confidence: float = 0.58
     minimum_training_rows: int = 120
+    minimum_horizon_agreement: int = 2
+    target_atr_multiple: float = 1.0
+    stop_atr_multiple: float = 0.75
 
 
 class TinyMarketScanner:
@@ -94,12 +98,21 @@ class TinyMarketScanner:
         d["breakout_high_20"] = (close > prior_high).astype(float)
         d["breakdown_low_20"] = (close < prior_low).astype(float)
 
+        for horizon in self.config.horizons:
+            horizon_close = close.shift(-horizon)
+            d[f"label_timestamp_{horizon}"] = d["timestamp"].shift(-horizon)
+            move = (horizon_close - close) / safe_close * 100
+            label = pd.Series("FLAT", index=d.index, dtype="object")
+            label.loc[move > self.config.flat_threshold_pct] = "UP"
+            label.loc[move < -self.config.flat_threshold_pct] = "DOWN"
+            label.loc[horizon_close.isna()] = None
+            d[f"future_move_{horizon}_pct"] = move
+            d[f"actual_{horizon}"] = label
+
         future_close = close.shift(-self.config.horizon)
         d["future_move_pct"] = (future_close - close) / safe_close * 100
-        d["actual"] = "FLAT"
-        d.loc[d["future_move_pct"] > self.config.flat_threshold_pct, "actual"] = "UP"
-        d.loc[d["future_move_pct"] < -self.config.flat_threshold_pct, "actual"] = "DOWN"
-        d.loc[future_close.isna(), "actual"] = None
+        d["actual"] = d[f"actual_{self.config.horizon}"]
+        self._add_trade_path_outcomes(d)
         return d
 
     def historical_test(
@@ -130,8 +143,8 @@ class TinyMarketScanner:
         if test.empty:
             raise ValueError("No unseen rows exist after the training cutoff.")
 
-        model = self._new_model().fit(train[FEATURE_COLUMNS], train["actual"])
-        result = self._predictions(model, test)
+        models = self._fit_horizon_models(train, label_cutoff=cutoff)
+        result = self._predictions(models, test)
         accuracy = float((result["prediction"] == result["actual"]).mean())
         balanced_accuracy = float(balanced_accuracy_score(result["actual"], result["prediction"]))
         majority_baseline = float(result["actual"].value_counts(normalize=True).max())
@@ -139,6 +152,17 @@ class TinyMarketScanner:
         directional_accuracy = (
             float((directional["prediction"] == directional["actual"]).mean())
             if not directional.empty else None
+        )
+        resolved_trades = directional[directional["trade_outcome"].isin(["TARGET", "STOP"])]
+        target_before_stop_rate = (
+            float((resolved_trades["trade_outcome"] == "TARGET").mean())
+            if not resolved_trades.empty else None
+        )
+        predictive_edge = accuracy > majority_baseline and balanced_accuracy > (1 / 3)
+        trade_edge = (
+            len(resolved_trades) >= 5
+            and target_before_stop_rate is not None
+            and target_before_stop_rate > 0.5
         )
         summary = {
             "train_start": str(train["timestamp"].min()),
@@ -151,9 +175,14 @@ class TinyMarketScanner:
             "balanced_accuracy": balanced_accuracy,
             "majority_baseline_accuracy": majority_baseline,
             "beats_majority_baseline": accuracy > majority_baseline,
-            "model_status": "CANDIDATE" if accuracy > majority_baseline else "REJECTED",
+            "predictive_edge": predictive_edge,
+            "trade_edge": trade_edge,
+            "model_status": "CANDIDATE" if predictive_edge and trade_edge else "REJECTED",
             "directional_rows": int(len(directional)),
             "directional_accuracy": directional_accuracy,
+            "resolved_trades": int(len(resolved_trades)),
+            "target_before_stop_rate": target_before_stop_rate,
+            "ambiguous_trades": int((directional["trade_outcome"] == "AMBIGUOUS").sum()),
         }
         return result, summary
 
@@ -161,37 +190,82 @@ class TinyMarketScanner:
         prepared = self._combine(frames)
         labelled = prepared[prepared["actual"].notna()]
         self._ensure_trainable(labelled)
-        model = self._new_model().fit(labelled[FEATURE_COLUMNS], labelled["actual"])
+        models = self._fit_horizon_models(labelled)
         latest = prepared.sort_values("timestamp").groupby("symbol", as_index=False).tail(1)
-        return self._predictions(model, latest, include_actual=False).sort_values(
+        return self._predictions(models, latest, include_actual=False).sort_values(
             ["score", "confidence"], ascending=False
         ).reset_index(drop=True)
 
-    def _predictions(self, model: Pipeline, rows: pd.DataFrame, include_actual: bool = True) -> pd.DataFrame:
-        probabilities = model.predict_proba(rows[FEATURE_COLUMNS])
-        classes = list(model.classes_)
+    def _fit_horizon_models(
+        self,
+        train: pd.DataFrame,
+        label_cutoff: pd.Timestamp | None = None,
+    ) -> dict[int, Pipeline]:
+        models = {}
+        for horizon in self.config.horizons:
+            label = f"actual_{horizon}"
+            subset = self._training_subset(train, horizon, label_cutoff)
+            self._ensure_trainable(subset, label)
+            models[horizon] = self._new_model().fit(subset[FEATURE_COLUMNS], subset[label])
+        return models
+
+    @staticmethod
+    def _training_subset(
+        train: pd.DataFrame,
+        horizon: int,
+        label_cutoff: pd.Timestamp | None,
+    ) -> pd.DataFrame:
+        label = f"actual_{horizon}"
+        subset = train[train[label].notna()]
+        if label_cutoff is not None:
+            subset = subset[subset[f"label_timestamp_{horizon}"] <= label_cutoff]
+        return subset
+
+    def _predictions(self, models: dict[int, Pipeline], rows: pd.DataFrame, include_actual: bool = True) -> pd.DataFrame:
+        probability_sets = []
+        votes = []
+        labels = ("UP", "DOWN", "FLAT")
+        for horizon, model in models.items():
+            raw = model.predict_proba(rows[FEATURE_COLUMNS])
+            classes = list(model.classes_)
+            aligned = np.column_stack([
+                raw[:, classes.index(label)] if label in classes else np.zeros(len(rows))
+                for label in labels
+            ])
+            probability_sets.append(aligned)
+            votes.append(np.array(labels)[aligned.argmax(axis=1)])
+        probabilities = np.mean(probability_sets, axis=0)
         out = rows[["timestamp", "symbol", "close"]].copy()
-        for label in ("UP", "DOWN", "FLAT"):
-            out[f"probability_{label.lower()}"] = (
-                probabilities[:, classes.index(label)] if label in classes else 0.0
-            )
+        for index, label in enumerate(labels):
+            out[f"probability_{label.lower()}"] = probabilities[:, index]
         predicted_index = probabilities.argmax(axis=1)
-        out["prediction"] = [classes[index] for index in predicted_index]
+        out["prediction"] = [labels[index] for index in predicted_index]
         out["confidence"] = probabilities.max(axis=1)
+        vote_matrix = np.column_stack(votes)
+        out["horizon_agreement"] = [int((row == prediction).sum()) for row, prediction in zip(vote_matrix, out["prediction"])]
+        out["horizon_votes"] = ["|".join(f"{h}:{vote}" for h, vote in zip(models, row)) for row in vote_matrix]
+        evidence = rows.apply(self._evidence_direction, axis=1)
+        out["evidence"] = evidence.values
         out["decision"] = "WAIT"
-        qualified = out["confidence"] >= self.config.minimum_confidence
+        qualified = (
+            (out["confidence"] >= self.config.minimum_confidence)
+            & (out["horizon_agreement"] >= self.config.minimum_horizon_agreement)
+            & (out["prediction"] == out["evidence"])
+        )
         out.loc[qualified & (out["prediction"] == "UP"), "decision"] = "BUY"
         out.loc[qualified & (out["prediction"] == "DOWN"), "decision"] = "SELL"
         out["score"] = (out["confidence"] * 100).round(1)
-        out["reason"] = np.where(
-            out["decision"] == "WAIT",
-            "Confidence below threshold or FLAT is most probable",
-            "Direction passed the configured probability threshold",
-        )
+        out["reason"] = out.apply(self._decision_reason, axis=1)
         if include_actual:
             out["actual"] = rows["actual"].values
             out["future_move_pct"] = rows["future_move_pct"].values
             out["correct"] = out["prediction"] == out["actual"]
+            outcomes = []
+            for decision, buy_outcome, sell_outcome in zip(
+                out["decision"], rows["buy_trade_outcome"], rows["sell_trade_outcome"]
+            ):
+                outcomes.append(buy_outcome if decision == "BUY" else sell_outcome if decision == "SELL" else "NO_TRADE")
+            out["trade_outcome"] = outcomes
         return out
 
     def _combine(self, frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -204,13 +278,75 @@ class TinyMarketScanner:
             raise ValueError("At least one stock dataset is required.")
         return pd.concat(items, ignore_index=True).dropna(subset=FEATURE_COLUMNS)
 
-    def _ensure_trainable(self, train: pd.DataFrame) -> None:
+    def _ensure_trainable(self, train: pd.DataFrame, label: str = "actual") -> None:
         if len(train) < self.config.minimum_training_rows:
             raise ValueError(
                 f"Need at least {self.config.minimum_training_rows} training rows; got {len(train)}."
             )
-        if train["actual"].nunique() < 2:
+        if train[label].nunique() < 2:
             raise ValueError("Training data needs at least two outcome classes.")
+
+    def _add_trade_path_outcomes(self, data: pd.DataFrame) -> None:
+        horizon = max(self.config.horizons)
+        atr = data["atr_14_pct"] / 100 * data["close"]
+        buy_target = data["close"] + self.config.target_atr_multiple * atr
+        buy_stop = data["close"] - self.config.stop_atr_multiple * atr
+        sell_target = data["close"] - self.config.target_atr_multiple * atr
+        sell_stop = data["close"] + self.config.stop_atr_multiple * atr
+
+        def first_step(condition_by_step: list[pd.Series]) -> pd.Series:
+            result = pd.Series(np.nan, index=data.index)
+            for step, condition in enumerate(condition_by_step, start=1):
+                result = result.mask(result.isna() & condition.fillna(False), step)
+            return result
+
+        future_highs = [data["high"].shift(-step) for step in range(1, horizon + 1)]
+        future_lows = [data["low"].shift(-step) for step in range(1, horizon + 1)]
+        buy_target_step = first_step([value >= buy_target for value in future_highs])
+        buy_stop_step = first_step([value <= buy_stop for value in future_lows])
+        sell_target_step = first_step([value <= sell_target for value in future_lows])
+        sell_stop_step = first_step([value >= sell_stop for value in future_highs])
+        data["buy_trade_outcome"] = self._resolve_path(buy_target_step, buy_stop_step)
+        data["sell_trade_outcome"] = self._resolve_path(sell_target_step, sell_stop_step)
+
+    @staticmethod
+    def _resolve_path(target_step: pd.Series, stop_step: pd.Series) -> pd.Series:
+        outcome = pd.Series("NEITHER", index=target_step.index, dtype="object")
+        outcome.loc[target_step.notna() & stop_step.isna()] = "TARGET"
+        outcome.loc[target_step.isna() & stop_step.notna()] = "STOP"
+        outcome.loc[target_step < stop_step] = "TARGET"
+        outcome.loc[stop_step < target_step] = "STOP"
+        outcome.loc[target_step.notna() & (target_step == stop_step)] = "AMBIGUOUS"
+        return outcome
+
+    @staticmethod
+    def _evidence_direction(row: pd.Series) -> str:
+        bullish = sum([
+            row["ema_21_distance"] > 0,
+            row["ema_21_slope"] > 0,
+            row["rsi_14"] > 50 and row["rsi_change_3"] > 0,
+            row["volume_ratio_20"] >= 1,
+            row["breakout_high_20"] == 1,
+        ])
+        bearish = sum([
+            row["ema_21_distance"] < 0,
+            row["ema_21_slope"] < 0,
+            row["rsi_14"] < 50 and row["rsi_change_3"] < 0,
+            row["volume_ratio_20"] >= 1,
+            row["breakdown_low_20"] == 1,
+        ])
+        return "UP" if bullish - bearish >= 2 else "DOWN" if bearish - bullish >= 2 else "FLAT"
+
+    def _decision_reason(self, row: pd.Series) -> str:
+        if row["prediction"] == "FLAT":
+            return "FLAT is most probable"
+        if row["confidence"] < self.config.minimum_confidence:
+            return "Ensemble confidence below threshold"
+        if row["horizon_agreement"] < self.config.minimum_horizon_agreement:
+            return "Insufficient agreement across prediction horizons"
+        if row["prediction"] != row["evidence"]:
+            return "Model direction is not confirmed by technical evidence"
+        return "Probability, horizon agreement, and technical evidence passed"
 
     @staticmethod
     def _new_model() -> Pipeline:

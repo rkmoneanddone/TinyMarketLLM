@@ -51,6 +51,29 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue((pd.to_datetime(result["timestamp"], utc=True) > cutoff).all())
         self.assertGreater(summary["unseen_rows"], 0)
         self.assertIn(summary["model_status"], {"CANDIDATE", "REJECTED"})
+        self.assertIn("target_before_stop_rate", summary)
+        self.assertTrue(set(result["trade_outcome"]).issubset(
+            {"TARGET", "STOP", "AMBIGUOUS", "NEITHER", "NO_TRADE"}
+        ))
+
+    def test_multi_horizon_and_evidence_are_reported(self):
+        result = self.scanner.scan_latest(self.frames)
+        self.assertTrue({"horizon_agreement", "horizon_votes", "evidence"}.issubset(result.columns))
+        traded = result[result["decision"].isin(["BUY", "SELL"])]
+        if not traded.empty:
+            expected = traded["decision"].map({"BUY": "UP", "SELL": "DOWN"})
+            self.assertTrue((traded["evidence"] == expected).all())
+            self.assertTrue((traded["horizon_agreement"] >= 2).all())
+
+    def test_training_labels_do_not_cross_cutoff(self):
+        prepared = self.scanner._combine(self.frames)
+        cutoff = pd.Timestamp("2024-09-30", tz="UTC")
+        train = prepared[(prepared["timestamp"] <= cutoff) & prepared["actual"].notna()]
+        for horizon in self.scanner.config.horizons:
+            crossing = train[train[f"label_timestamp_{horizon}"] > cutoff]
+            eligible = self.scanner._training_subset(train, horizon, cutoff)
+            self.assertGreater(len(crossing), 0)
+            self.assertTrue((eligible[f"label_timestamp_{horizon}"] <= cutoff).all())
 
     def test_missing_ohlc_is_rejected(self):
         with self.assertRaises(ValueError):
