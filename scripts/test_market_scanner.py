@@ -52,6 +52,9 @@ class ScannerTests(unittest.TestCase):
         self.assertGreater(summary["unseen_rows"], 0)
         self.assertIn(summary["model_status"], {"CANDIDATE", "REJECTED"})
         self.assertIn("target_before_stop_rate", summary)
+        self.assertIn("accuracy_ci_95_low", summary)
+        self.assertIn("target_rate_ci_95_low", summary)
+        self.assertIn("symbol_metrics", summary)
         self.assertTrue(set(result["trade_outcome"]).issubset(
             {"TARGET", "STOP", "AMBIGUOUS", "NEITHER", "NO_TRADE"}
         ))
@@ -78,6 +81,11 @@ class ScannerTests(unittest.TestCase):
     def test_missing_ohlc_is_rejected(self):
         with self.assertRaises(ValueError):
             self.scanner.prepare(pd.DataFrame({"close": [1.0]}))
+
+    def test_small_trade_sample_cannot_be_promoted(self):
+        low, high = self.scanner._wilson_interval(4, 5)
+        self.assertLess(low, 0.5)
+        self.assertGreater(high, 0.5)
 
 
 if __name__ == "__main__":

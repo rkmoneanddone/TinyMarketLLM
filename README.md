@@ -257,4 +257,8 @@ also measure whether a 1 ATR target was reached before a 0.75 ATR stop within
 five candles; a same-candle target/stop touch is recorded as `AMBIGUOUS`, never
 as a win. A model is a `CANDIDATE` only when it beats the majority baseline,
 beats random balanced accuracy, and demonstrates target-before-stop quality on
-at least five resolved trades. Otherwise it remains `REJECTED`/research-only.
+enough resolved trades across multiple stocks. Both classification accuracy and
+target-before-stop rate use 95% Wilson uncertainty bounds; their lower bounds
+must clear the relevant baseline. The default requires at least 20 resolved
+trades covering at least two stocks. Otherwise it remains
+`REJECTED`/research-only.

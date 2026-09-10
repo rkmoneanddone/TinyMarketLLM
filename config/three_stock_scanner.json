@@ -9,6 +9,8 @@
   "minimum_horizon_agreement": 2,
   "target_atr_multiple": 1.0,
   "stop_atr_multiple": 0.75,
+  "minimum_resolved_trades": 20,
+  "minimum_trade_symbols": 2,
   "maximum_candidates": 3,
   "risk_per_trade_pct": 0.5,
   "storage": {

@@ -31,6 +31,8 @@ class ScannerConfig:
     minimum_horizon_agreement: int = 2
     target_atr_multiple: float = 1.0
     stop_atr_multiple: float = 0.75
+    minimum_resolved_trades: int = 20
+    minimum_trade_symbols: int = 2
 
 
 class TinyMarketScanner:
@@ -158,12 +160,33 @@ class TinyMarketScanner:
             float((resolved_trades["trade_outcome"] == "TARGET").mean())
             if not resolved_trades.empty else None
         )
-        predictive_edge = accuracy > majority_baseline and balanced_accuracy > (1 / 3)
-        trade_edge = (
-            len(resolved_trades) >= 5
-            and target_before_stop_rate is not None
-            and target_before_stop_rate > 0.5
+        accuracy_ci_low, accuracy_ci_high = self._wilson_interval(
+            int((result["prediction"] == result["actual"]).sum()), len(result)
         )
+        target_rate_ci_low, target_rate_ci_high = self._wilson_interval(
+            int((resolved_trades["trade_outcome"] == "TARGET").sum()),
+            len(resolved_trades),
+        )
+        trade_symbols = int(directional["symbol"].nunique())
+        predictive_edge = (
+            accuracy_ci_low > majority_baseline
+            and balanced_accuracy > (1 / 3)
+        )
+        trade_edge = (
+            len(resolved_trades) >= self.config.minimum_resolved_trades
+            and trade_symbols >= self.config.minimum_trade_symbols
+            and target_before_stop_rate is not None
+            and target_rate_ci_low is not None
+            and target_rate_ci_low > 0.5
+        )
+        symbol_metrics = {}
+        for symbol, group in result.groupby("symbol"):
+            symbol_metrics[symbol] = {
+                "rows": int(len(group)),
+                "accuracy": float((group["prediction"] == group["actual"]).mean()),
+                "majority_baseline_accuracy": float(group["actual"].value_counts(normalize=True).max()),
+                "trades": int(group["decision"].isin(["BUY", "SELL"]).sum()),
+            }
         summary = {
             "train_start": str(train["timestamp"].min()),
             "train_end": str(cutoff),
@@ -172,6 +195,8 @@ class TinyMarketScanner:
             "training_rows": int(len(train)),
             "unseen_rows": int(len(result)),
             "accuracy": accuracy,
+            "accuracy_ci_95_low": accuracy_ci_low,
+            "accuracy_ci_95_high": accuracy_ci_high,
             "balanced_accuracy": balanced_accuracy,
             "majority_baseline_accuracy": majority_baseline,
             "beats_majority_baseline": accuracy > majority_baseline,
@@ -182,7 +207,11 @@ class TinyMarketScanner:
             "directional_accuracy": directional_accuracy,
             "resolved_trades": int(len(resolved_trades)),
             "target_before_stop_rate": target_before_stop_rate,
+            "target_rate_ci_95_low": target_rate_ci_low,
+            "target_rate_ci_95_high": target_rate_ci_high,
+            "trade_symbols": trade_symbols,
             "ambiguous_trades": int((directional["trade_outcome"] == "AMBIGUOUS").sum()),
+            "symbol_metrics": symbol_metrics,
         }
         return result, summary
 
@@ -347,6 +376,25 @@ class TinyMarketScanner:
         if row["prediction"] != row["evidence"]:
             return "Model direction is not confirmed by technical evidence"
         return "Probability, horizon agreement, and technical evidence passed"
+
+    @staticmethod
+    def _wilson_interval(successes: int, observations: int) -> tuple[float | None, float | None]:
+        """95% Wilson score interval for a binomial rate."""
+        if observations <= 0:
+            return None, None
+        z = 1.959963984540054
+        rate = successes / observations
+        denominator = 1 + z * z / observations
+        centre = (rate + z * z / (2 * observations)) / denominator
+        margin = (
+            z
+            * np.sqrt(
+                rate * (1 - rate) / observations
+                + z * z / (4 * observations * observations)
+            )
+            / denominator
+        )
+        return float(centre - margin), float(centre + margin)
 
     @staticmethod
     def _new_model() -> Pipeline:

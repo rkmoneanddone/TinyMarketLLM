@@ -47,6 +47,8 @@ def scanner_from(config: dict) -> TinyMarketScanner:
         minimum_horizon_agreement=config["minimum_horizon_agreement"],
         target_atr_multiple=config["target_atr_multiple"],
         stop_atr_multiple=config["stop_atr_multiple"],
+        minimum_resolved_trades=config["minimum_resolved_trades"],
+        minimum_trade_symbols=config["minimum_trade_symbols"],
     ))
 
 
