@@ -1,8 +1,9 @@
 {
   "symbols": ["GRASIM", "RELIANCE", "TCS"],
   "timeframe": "1D",
-  "prediction_horizon_candles": 3,
+  "prediction_horizon_candles": 1,
   "prediction_horizons": [1, 3, 5],
+  "trade_evaluation_horizon_candles": 5,
   "flat_move_threshold_pct": 0.5,
   "minimum_confidence": 0.58,
   "minimum_training_rows": 120,

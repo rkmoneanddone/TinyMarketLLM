@@ -23,8 +23,9 @@ FEATURE_COLUMNS = [
 
 @dataclass(frozen=True)
 class ScannerConfig:
-    horizon: int = 3
+    horizon: int = 1
     horizons: tuple[int, ...] = (1, 3, 5)
+    trade_evaluation_horizon: int = 5
     flat_threshold_pct: float = 0.5
     minimum_confidence: float = 0.58
     minimum_training_rows: int = 120
@@ -188,6 +189,8 @@ class TinyMarketScanner:
                 "trades": int(group["decision"].isin(["BUY", "SELL"]).sum()),
             }
         summary = {
+            "decision_horizon_candles": self.config.horizon,
+            "trade_evaluation_horizon_candles": self.config.trade_evaluation_horizon,
             "train_start": str(train["timestamp"].min()),
             "train_end": str(cutoff),
             "test_start": str(test["timestamp"].min()),
@@ -283,6 +286,8 @@ class TinyMarketScanner:
         summary = self._quality_summary(result)
         summary.update({
             "mode": "daily_walk_forward",
+            "decision_horizon_candles": self.config.horizon,
+            "trade_evaluation_horizon_candles": self.config.trade_evaluation_horizon,
             "test_start": str(result["timestamp"].min()),
             "test_end": str(result["timestamp"].max()),
             "training_years": training_years,
@@ -469,7 +474,9 @@ class TinyMarketScanner:
             raise ValueError("Training data needs at least two outcome classes.")
 
     def _add_trade_path_outcomes(self, data: pd.DataFrame) -> None:
-        horizon = max(self.config.horizons)
+        horizon = self.config.trade_evaluation_horizon
+        if horizon < 1:
+            raise ValueError("trade_evaluation_horizon must be at least 1.")
         atr = data["atr_14_pct"] / 100 * data["close"]
         buy_target = data["close"] + self.config.target_atr_multiple * atr
         buy_stop = data["close"] - self.config.stop_atr_multiple * atr

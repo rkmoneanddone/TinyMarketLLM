@@ -261,7 +261,7 @@ underperforming model as `REJECTED`. A rejected model must not be promoted to
 paper-trade or live-trade use.
 
 The scanner reports separate accuracy and confidence for its 1-, 3-, and
-5-candle classifiers. The configured 3-candle classifier is the primary
+5-candle classifiers. The configured 1-candle classifier is the primary
 BUY/SELL/WAIT direction; the other horizons confirm it rather than having their
 probabilities averaged into a mismatched target. BUY or SELL requires sufficient
 primary-model confidence, agreement from at least two horizons, and matching
@@ -276,3 +276,7 @@ target-before-stop rate use 95% Wilson uncertainty bounds; their lower bounds
 must clear the relevant baseline. The default requires at least 20 resolved
 trades covering at least two stocks. Otherwise it remains
 `REJECTED`/research-only.
+
+The primary one-candle direction matches the “tomorrow” scanner goal. Trade
+path quality is measured separately over the next five candles, so reports make
+a clear distinction between direction horizon and target/stop evaluation window.

@@ -41,6 +41,7 @@ def scanner_from(config: dict) -> TinyMarketScanner:
     return TinyMarketScanner(ScannerConfig(
         horizon=config["prediction_horizon_candles"],
         horizons=tuple(config["prediction_horizons"]),
+        trade_evaluation_horizon=config["trade_evaluation_horizon_candles"],
         flat_threshold_pct=config["flat_move_threshold_pct"],
         minimum_confidence=config["minimum_confidence"],
         minimum_training_rows=config["minimum_training_rows"],
@@ -125,7 +126,12 @@ def main() -> None:
         name = f"historical_train_{train_label}_test_{test_label}"
     else:
         rows = scanner.scan_latest(frames).head(config["maximum_candidates"])
-        summary = {"mode": "latest", "stocks_loaded": sorted(frames)}
+        summary = {
+            "mode": "latest",
+            "stocks_loaded": sorted(frames),
+            "decision_horizon_candles": scanner.config.horizon,
+            "trade_evaluation_horizon_candles": scanner.config.trade_evaluation_horizon,
+        }
         name = f"latest_{args.symbol}" if args.symbol else "latest_all"
 
     report = write_report(rows, summary, config, name)

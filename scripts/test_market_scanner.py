@@ -38,6 +38,7 @@ class ScannerTests(unittest.TestCase):
         result = self.scanner.scan_latest(self.frames)
         self.assertEqual(set(result["symbol"]), set(self.frames))
         self.assertTrue(set(result["decision"]).issubset({"BUY", "SELL", "WAIT"}))
+        self.assertTrue((result["prediction"] == result["prediction_1"]).all())
 
     def test_fixed_cutoff_keeps_future_unseen(self):
         result, summary = self.scanner.historical_test(
@@ -94,6 +95,8 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue((result.groupby("timestamp")["symbol"].nunique() == 3).all())
         self.assertEqual(summary["fold_count"], result["timestamp"].nunique())
         self.assertEqual(summary["mode"], "daily_walk_forward")
+        self.assertEqual(summary["decision_horizon_candles"], 1)
+        self.assertEqual(summary["trade_evaluation_horizon_candles"], 5)
         self.assertEqual(set(summary["horizon_metrics"]), {"1", "3", "5"})
         for horizon in self.scanner.config.horizons:
             self.assertTrue((result[f"correct_{horizon}"] == (
