@@ -136,6 +136,7 @@ class TinyMarketScanner:
         recent_low = low.rolling(5).min()
         previous_low = low.shift(5).rolling(5).min()
         d["higher_low_strength_5_atr"] = (recent_low - previous_low) / atr_value.replace(0, np.nan)
+        self._add_setup_signals(d, ema21, ema50, prior_high, prior_low, atr_value)
         d.replace([np.inf, -np.inf], np.nan, inplace=True)
 
         for horizon in self.config.horizons:
@@ -253,6 +254,7 @@ class TinyMarketScanner:
             "ambiguous_trades": int((directional["trade_outcome"] == "AMBIGUOUS").sum()),
             "symbol_metrics": symbol_metrics,
             "horizon_metrics": self._horizon_metrics(result),
+            "setup_metrics": self._setup_metrics(result),
         }
         return result, summary
 
@@ -386,7 +388,7 @@ class TinyMarketScanner:
         if self.config.horizon not in probability_by_horizon:
             raise ValueError("The configured decision horizon has no fitted model.")
         probabilities = probability_by_horizon[self.config.horizon]
-        out = rows[["timestamp", "symbol", "close"]].copy()
+        out = rows[["timestamp", "symbol", "close", "setup", "setup_direction"]].copy()
         for index, label in enumerate(labels):
             out[f"probability_{label.lower()}"] = probabilities[:, index]
         predicted_index = probabilities.argmax(axis=1)
@@ -406,6 +408,7 @@ class TinyMarketScanner:
             (out["confidence"] >= self.config.minimum_confidence)
             & (out["horizon_agreement"] >= self.config.minimum_horizon_agreement)
             & (out["prediction"] == out["evidence"])
+            & (out["prediction"] == out["setup_direction"])
         )
         out.loc[qualified & (out["prediction"] == "UP"), "decision"] = "BUY"
         out.loc[qualified & (out["prediction"] == "DOWN"), "decision"] = "SELL"
@@ -425,6 +428,11 @@ class TinyMarketScanner:
             ):
                 outcomes.append(buy_outcome if decision == "BUY" else sell_outcome if decision == "SELL" else "NO_TRADE")
             out["trade_outcome"] = outcomes
+            out["setup_outcome"] = np.where(
+                out["setup_direction"] == "UP",
+                rows["buy_trade_outcome"],
+                np.where(out["setup_direction"] == "DOWN", rows["sell_trade_outcome"], "NO_SETUP"),
+            )
         return out
 
     def _combine(self, frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -478,6 +486,7 @@ class TinyMarketScanner:
                 for symbol, group in result.groupby("symbol")
             },
             "horizon_metrics": self._horizon_metrics(result),
+            "setup_metrics": self._setup_metrics(result),
         }
 
     def _horizon_metrics(self, result: pd.DataFrame) -> dict[str, dict]:
@@ -509,6 +518,100 @@ class TinyMarketScanner:
             )
         if train[label].nunique() < 2:
             raise ValueError("Training data needs at least two outcome classes.")
+
+    @staticmethod
+    def _add_setup_signals(
+        data: pd.DataFrame,
+        ema21: pd.Series,
+        ema50: pd.Series,
+        prior_high: pd.Series,
+        prior_low: pd.Series,
+        atr: pd.Series,
+    ) -> None:
+        close, open_, high, low = data["close"], data["open"], data["high"], data["low"]
+        bull_cross = (ema21 > ema50) & (ema21.shift(1) <= ema50.shift(1))
+        bear_cross = (ema21 < ema50) & (ema21.shift(1) >= ema50.shift(1))
+        bull_pullback = (
+            (ema21 > ema50) & (data["ema_21_slope"] > 0)
+            & (low <= ema21 * 1.005) & (close > ema21) & (close > open_)
+        )
+        bear_pullback = (
+            (ema21 < ema50) & (data["ema_21_slope"] < 0)
+            & (high >= ema21 * 0.995) & (close < ema21) & (close < open_)
+        )
+        bull_breakout = (
+            (close > prior_high) & (data["volume_ratio_20"] >= 1.2)
+            & (data["close_location"] >= 0.65)
+        )
+        bear_breakout = (
+            (close < prior_low) & (data["volume_ratio_20"] >= 1.2)
+            & (data["close_location"] <= 0.35)
+        )
+        last_bull_level = prior_high.where(close > prior_high).shift(1).ffill(limit=5)
+        last_bear_level = prior_low.where(close < prior_low).shift(1).ffill(limit=5)
+        bull_retest = (
+            last_bull_level.notna() & (low <= last_bull_level * 1.005)
+            & (close > last_bull_level) & (close > open_)
+        )
+        bear_retest = (
+            last_bear_level.notna() & (high >= last_bear_level * 0.995)
+            & (close < last_bear_level) & (close < open_)
+        )
+        body = (close - open_).abs()
+        lower_wick = np.minimum(open_, close) - low
+        upper_wick = high - np.maximum(open_, close)
+        support_rejection = (
+            (low <= prior_low + 0.25 * atr) & (close > prior_low)
+            & (lower_wick >= body * 1.2) & (close > open_)
+        )
+        resistance_rejection = (
+            (high >= prior_high - 0.25 * atr) & (close < prior_high)
+            & (upper_wick >= body * 1.2) & (close < open_)
+        )
+        definitions = [
+            ("EMA_BULL_CROSS", "UP", bull_cross),
+            ("EMA_BEAR_CROSS", "DOWN", bear_cross),
+            ("BREAKOUT_VOLUME", "UP", bull_breakout),
+            ("BREAKDOWN_VOLUME", "DOWN", bear_breakout),
+            ("BREAKOUT_RETEST", "UP", bull_retest),
+            ("BREAKDOWN_RETEST", "DOWN", bear_retest),
+            ("EMA_BULL_PULLBACK", "UP", bull_pullback),
+            ("EMA_BEAR_PULLBACK", "DOWN", bear_pullback),
+            ("SUPPORT_REJECTION", "UP", support_rejection),
+            ("RESISTANCE_REJECTION", "DOWN", resistance_rejection),
+        ]
+        setup, direction = [], []
+        for index in data.index:
+            matches = [(name, side) for name, side, mask in definitions if bool(mask.loc[index])]
+            setup.append("|".join(name for name, _ in matches) if matches else "NONE")
+            sides = {side for _, side in matches}
+            direction.append(next(iter(sides)) if len(sides) == 1 else "CONFLICT" if sides else "FLAT")
+        data["setup"] = setup
+        data["setup_direction"] = direction
+
+    def _setup_metrics(self, result: pd.DataFrame) -> dict[str, dict]:
+        if "setup_outcome" not in result:
+            return {}
+        metrics = {}
+        setup_names = sorted({
+            name for value in result["setup"] if value != "NONE" for name in value.split("|")
+        })
+        for name in setup_names:
+            group = result[result["setup"].str.split("|").apply(lambda values: name in values)]
+            resolved = group[group["setup_outcome"].isin(["TARGET", "STOP"])]
+            targets = int((resolved["setup_outcome"] == "TARGET").sum())
+            low, high = self._wilson_interval(targets, len(resolved))
+            metrics[name] = {
+                "occurrences": int(len(group)),
+                "symbols": int(group["symbol"].nunique()),
+                "resolved": int(len(resolved)),
+                "targets": targets,
+                "stops": int((resolved["setup_outcome"] == "STOP").sum()),
+                "target_before_stop_rate": float(targets / len(resolved)) if len(resolved) else None,
+                "target_rate_ci_95_low": low,
+                "target_rate_ci_95_high": high,
+            }
+        return metrics
 
     def _add_trade_path_outcomes(self, data: pd.DataFrame) -> None:
         horizon = self.config.trade_evaluation_horizon
@@ -564,6 +667,10 @@ class TinyMarketScanner:
         return "UP" if bullish - bearish >= 2 else "DOWN" if bearish - bullish >= 2 else "FLAT"
 
     def _decision_reason(self, row: pd.Series) -> str:
+        if row["setup"] == "NONE":
+            return "No recognised trade setup"
+        if row["setup_direction"] == "CONFLICT":
+            return "Conflicting trade setups"
         if row["prediction"] == "FLAT":
             return "FLAT is most probable"
         if row["confidence"] < self.config.minimum_confidence:
@@ -572,7 +679,9 @@ class TinyMarketScanner:
             return "Insufficient agreement across prediction horizons"
         if row["prediction"] != row["evidence"]:
             return "Model direction is not confirmed by technical evidence"
-        return "Probability, horizon agreement, and technical evidence passed"
+        if row["prediction"] != row["setup_direction"]:
+            return "Model direction does not confirm the detected setup"
+        return "Setup, probability, horizon agreement, and technical evidence passed"
 
     @staticmethod
     def _wilson_interval(successes: int, observations: int) -> tuple[float | None, float | None]:

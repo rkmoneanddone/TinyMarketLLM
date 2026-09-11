@@ -56,6 +56,8 @@ class ScannerTests(unittest.TestCase):
         self.assertIn("accuracy_ci_95_low", summary)
         self.assertIn("target_rate_ci_95_low", summary)
         self.assertIn("symbol_metrics", summary)
+        self.assertIn("setup_metrics", summary)
+        self.assertTrue({"setup", "setup_direction", "setup_outcome"}.issubset(result.columns))
         self.assertTrue(set(result["trade_outcome"]).issubset(
             {"TARGET", "STOP", "AMBIGUOUS", "NEITHER", "NO_TRADE"}
         ))
@@ -73,6 +75,23 @@ class ScannerTests(unittest.TestCase):
             expected = traded["decision"].map({"BUY": "UP", "SELL": "DOWN"})
             self.assertTrue((traded["evidence"] == expected).all())
             self.assertTrue((traded["horizon_agreement"] >= 2).all())
+            self.assertTrue((traded["setup"] != "NONE").all())
+            self.assertTrue((traded["setup_direction"] == expected).all())
+
+    def test_setup_detector_uses_known_setup_names(self):
+        prepared = self.scanner.prepare(sample(7, rows=600))
+        allowed = {
+            "EMA_BULL_CROSS", "EMA_BEAR_CROSS", "BREAKOUT_VOLUME",
+            "BREAKDOWN_VOLUME", "BREAKOUT_RETEST", "BREAKDOWN_RETEST",
+            "EMA_BULL_PULLBACK", "EMA_BEAR_PULLBACK", "SUPPORT_REJECTION",
+            "RESISTANCE_REJECTION",
+        }
+        observed = {
+            name for value in prepared["setup"] if value != "NONE" for name in value.split("|")
+        }
+        self.assertTrue(observed)
+        self.assertTrue(observed.issubset(allowed))
+        self.assertTrue(set(prepared["setup_direction"]).issubset({"UP", "DOWN", "FLAT", "CONFLICT"}))
 
     def test_training_labels_do_not_cross_cutoff(self):
         prepared = self.scanner._combine(self.frames)

@@ -292,3 +292,12 @@ This creates one core-versus-chart report without changing the configured core
 scanner. The candidate group includes longer support/resistance, breakout
 strength, range compression, volume expansion, candle close location, EMA
 overextension, and higher-low structure. It is never promoted automatically.
+
+## Selective trade setups
+
+The scanner does not trade on an indicator alone. It detects discrete EMA21/50
+crossovers, EMA pullbacks, volume-confirmed breakouts/breakdowns, breakout
+retests, and support/resistance rejections. A BUY or SELL requires a detected
+setup plus matching model direction, multi-horizon agreement, technical
+evidence, and confidence. Every setup is also evaluated independently by
+target-before-stop outcome in historical reports; otherwise the result is WAIT.
