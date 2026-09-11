@@ -280,3 +280,15 @@ trades covering at least two stocks. Otherwise it remains
 The primary one-candle direction matches the “tomorrow” scanner goal. Trade
 path quality is measured separately over the next five candles, so reports make
 a clear distinction between direction horizon and target/stop evaluation window.
+
+Chart-derived ideas are isolated from the production feature set until they
+prove useful. Run the automatic leakage-safe comparison with:
+
+```powershell
+python scripts\compare_scanner_features.py --training-years 3 --test-start 2026-04-01 --test-end 2026-09-30
+```
+
+This creates one core-versus-chart report without changing the configured core
+scanner. The candidate group includes longer support/resistance, breakout
+strength, range compression, volume expansion, candle close location, EMA
+overextension, and higher-low structure. It is never promoted automatically.

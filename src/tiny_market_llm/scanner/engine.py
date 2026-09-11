@@ -12,12 +12,20 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 
-FEATURE_COLUMNS = [
+CORE_FEATURE_COLUMNS = [
     "return_1", "return_3", "return_5", "body_pct", "upper_wick_pct",
     "lower_wick_pct", "range_pct", "ema_21_distance", "ema_50_distance",
     "ema_21_slope", "ema_50_slope", "rsi_14", "rsi_change_3",
     "atr_14_pct", "volume_ratio_20", "distance_high_20",
     "distance_low_20", "breakout_high_20", "breakdown_low_20",
+]
+
+CHART_FEATURE_COLUMNS = CORE_FEATURE_COLUMNS + [
+    "distance_high_60", "distance_low_60", "breakout_high_60",
+    "breakdown_low_60", "range_compression_10_50",
+    "volume_expansion_5_20", "close_location",
+    "breakout_strength_20_atr", "ema_21_distance_atr",
+    "higher_low_strength_5_atr",
 ]
 
 
@@ -34,6 +42,7 @@ class ScannerConfig:
     stop_atr_multiple: float = 0.75
     minimum_resolved_trades: int = 20
     minimum_trade_symbols: int = 2
+    feature_set: str = "core"
 
 
 class TinyMarketScanner:
@@ -45,6 +54,10 @@ class TinyMarketScanner:
 
     def __init__(self, config: ScannerConfig | None = None):
         self.config = config or ScannerConfig()
+        feature_sets = {"core": CORE_FEATURE_COLUMNS, "chart": CHART_FEATURE_COLUMNS}
+        if self.config.feature_set not in feature_sets:
+            raise ValueError(f"Unknown feature_set: {self.config.feature_set}")
+        self.feature_columns = feature_sets[self.config.feature_set]
 
     def prepare(self, ohlc: pd.DataFrame) -> pd.DataFrame:
         self._validate_ohlc(ohlc)
@@ -100,6 +113,30 @@ class TinyMarketScanner:
         d["distance_low_20"] = (close - prior_low) / prior_low * 100
         d["breakout_high_20"] = (close > prior_high).astype(float)
         d["breakdown_low_20"] = (close < prior_low).astype(float)
+
+        prior_high_60 = high.shift(1).rolling(60).max()
+        prior_low_60 = low.shift(1).rolling(60).min()
+        atr_value = d["atr_14_pct"] / 100 * safe_close
+        d["distance_high_60"] = (close - prior_high_60) / prior_high_60 * 100
+        d["distance_low_60"] = (close - prior_low_60) / prior_low_60 * 100
+        d["breakout_high_60"] = (close > prior_high_60).astype(float)
+        d["breakdown_low_60"] = (close < prior_low_60).astype(float)
+        d["range_compression_10_50"] = (
+            d["range_pct"].rolling(10).mean()
+            / d["range_pct"].rolling(50).mean().replace(0, np.nan)
+        )
+        d["volume_expansion_5_20"] = (
+            d["volume"].rolling(5).mean()
+            / d["volume"].rolling(20).mean().replace(0, np.nan)
+        )
+        candle_range = (high - low).replace(0, np.nan)
+        d["close_location"] = (close - low) / candle_range
+        d["breakout_strength_20_atr"] = (close - prior_high) / atr_value.replace(0, np.nan)
+        d["ema_21_distance_atr"] = (close - ema21) / atr_value.replace(0, np.nan)
+        recent_low = low.rolling(5).min()
+        previous_low = low.shift(5).rolling(5).min()
+        d["higher_low_strength_5_atr"] = (recent_low - previous_low) / atr_value.replace(0, np.nan)
+        d.replace([np.inf, -np.inf], np.nan, inplace=True)
 
         for horizon in self.config.horizons:
             horizon_close = close.shift(-horizon)
@@ -318,7 +355,7 @@ class TinyMarketScanner:
             label = f"actual_{horizon}"
             subset = self._training_subset(train, horizon, label_cutoff)
             self._ensure_trainable(subset, label)
-            models[horizon] = self._new_model().fit(subset[FEATURE_COLUMNS], subset[label])
+            models[horizon] = self._new_model().fit(subset[self.feature_columns], subset[label])
         return models
 
     @staticmethod
@@ -338,7 +375,7 @@ class TinyMarketScanner:
         votes = []
         labels = ("UP", "DOWN", "FLAT")
         for horizon, model in models.items():
-            raw = model.predict_proba(rows[FEATURE_COLUMNS])
+            raw = model.predict_proba(rows[self.feature_columns])
             classes = list(model.classes_)
             aligned = np.column_stack([
                 raw[:, classes.index(label)] if label in classes else np.zeros(len(rows))
@@ -398,7 +435,7 @@ class TinyMarketScanner:
             items.append(prepared)
         if not items:
             raise ValueError("At least one stock dataset is required.")
-        return pd.concat(items, ignore_index=True).dropna(subset=FEATURE_COLUMNS)
+        return pd.concat(items, ignore_index=True).dropna(subset=self.feature_columns)
 
     def _quality_summary(self, result: pd.DataFrame) -> dict:
         correct = result["prediction"] == result["actual"]

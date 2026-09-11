@@ -107,6 +107,17 @@ class ScannerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.scanner.prepare(pd.DataFrame({"close": [1.0]}))
 
+    def test_chart_feature_family_is_trainable_without_changing_core(self):
+        chart = TinyMarketScanner(ScannerConfig(minimum_training_rows=100, feature_set="chart"))
+        core_result = self.scanner.scan_latest(self.frames)
+        chart_result = chart.scan_latest(self.frames)
+        self.assertEqual(set(core_result["symbol"]), set(chart_result["symbol"]))
+        self.assertGreater(len(chart.feature_columns), len(self.scanner.feature_columns))
+
+    def test_unknown_feature_family_is_rejected(self):
+        with self.assertRaises(ValueError):
+            TinyMarketScanner(ScannerConfig(feature_set="unknown"))
+
     def test_small_trade_sample_cannot_be_promoted(self):
         low, high = self.scanner._wilson_interval(4, 5)
         self.assertLess(low, 0.5)

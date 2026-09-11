@@ -37,7 +37,7 @@ def load_frames(config: dict) -> dict[str, pd.DataFrame]:
     return frames
 
 
-def scanner_from(config: dict) -> TinyMarketScanner:
+def scanner_from(config: dict, feature_set: str | None = None) -> TinyMarketScanner:
     return TinyMarketScanner(ScannerConfig(
         horizon=config["prediction_horizon_candles"],
         horizons=tuple(config["prediction_horizons"]),
@@ -50,6 +50,7 @@ def scanner_from(config: dict) -> TinyMarketScanner:
         stop_atr_multiple=config["stop_atr_multiple"],
         minimum_resolved_trades=config["minimum_resolved_trades"],
         minimum_trade_symbols=config["minimum_trade_symbols"],
+        feature_set=feature_set or config.get("feature_set", "core"),
     ))
 
 
@@ -95,13 +96,14 @@ def main() -> None:
     parser.add_argument("--test-end", help="Optional final unseen-test date")
     parser.add_argument("--walk-forward", action="store_true", help="Retrain before each test day")
     parser.add_argument("--training-years", type=int, default=3, help="Rolling history for walk-forward training")
+    parser.add_argument("--feature-set", choices=("core", "chart"), help="Feature family to evaluate")
     args = parser.parse_args()
 
     config = load_configuration()
     frames = load_frames(config)
     if args.symbol:
         frames = {args.symbol: frames[args.symbol]}
-    scanner = scanner_from(config)
+    scanner = scanner_from(config, args.feature_set)
 
     if args.walk_forward:
         if not args.test_start or not args.test_end:
@@ -112,7 +114,7 @@ def main() -> None:
             test_end=args.test_end,
             training_years=args.training_years,
         )
-        name = f"walkforward_daily_{args.training_years}y_{args.test_start}_to_{args.test_end}"
+        name = f"walkforward_{scanner.config.feature_set}_daily_{args.training_years}y_{args.test_start}_to_{args.test_end}"
     elif args.train_end:
         rows, summary = scanner.historical_test(
             frames,
