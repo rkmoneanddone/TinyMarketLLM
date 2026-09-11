@@ -212,6 +212,7 @@ class TinyMarketScanner:
             "trade_symbols": trade_symbols,
             "ambiguous_trades": int((directional["trade_outcome"] == "AMBIGUOUS").sum()),
             "symbol_metrics": symbol_metrics,
+            "horizon_metrics": self._horizon_metrics(result),
         }
         return result, summary
 
@@ -328,7 +329,7 @@ class TinyMarketScanner:
         return subset
 
     def _predictions(self, models: dict[int, Pipeline], rows: pd.DataFrame, include_actual: bool = True) -> pd.DataFrame:
-        probability_sets = []
+        probability_by_horizon = {}
         votes = []
         labels = ("UP", "DOWN", "FLAT")
         for horizon, model in models.items():
@@ -338,15 +339,21 @@ class TinyMarketScanner:
                 raw[:, classes.index(label)] if label in classes else np.zeros(len(rows))
                 for label in labels
             ])
-            probability_sets.append(aligned)
+            probability_by_horizon[horizon] = aligned
             votes.append(np.array(labels)[aligned.argmax(axis=1)])
-        probabilities = np.mean(probability_sets, axis=0)
+        if self.config.horizon not in probability_by_horizon:
+            raise ValueError("The configured decision horizon has no fitted model.")
+        probabilities = probability_by_horizon[self.config.horizon]
         out = rows[["timestamp", "symbol", "close"]].copy()
         for index, label in enumerate(labels):
             out[f"probability_{label.lower()}"] = probabilities[:, index]
         predicted_index = probabilities.argmax(axis=1)
         out["prediction"] = [labels[index] for index in predicted_index]
         out["confidence"] = probabilities.max(axis=1)
+        for horizon, horizon_probabilities in probability_by_horizon.items():
+            horizon_prediction = np.array(labels)[horizon_probabilities.argmax(axis=1)]
+            out[f"prediction_{horizon}"] = horizon_prediction
+            out[f"confidence_{horizon}"] = horizon_probabilities.max(axis=1)
         vote_matrix = np.column_stack(votes)
         out["horizon_agreement"] = [int((row == prediction).sum()) for row, prediction in zip(vote_matrix, out["prediction"])]
         out["horizon_votes"] = ["|".join(f"{h}:{vote}" for h, vote in zip(models, row)) for row in vote_matrix]
@@ -366,6 +373,10 @@ class TinyMarketScanner:
             out["actual"] = rows["actual"].values
             out["future_move_pct"] = rows["future_move_pct"].values
             out["correct"] = out["prediction"] == out["actual"]
+            for horizon in models:
+                out[f"actual_{horizon}"] = rows[f"actual_{horizon}"].values
+                out[f"future_move_{horizon}_pct"] = rows[f"future_move_{horizon}_pct"].values
+                out[f"correct_{horizon}"] = out[f"prediction_{horizon}"] == out[f"actual_{horizon}"]
             outcomes = []
             for decision, buy_outcome, sell_outcome in zip(
                 out["decision"], rows["buy_trade_outcome"], rows["sell_trade_outcome"]
@@ -424,7 +435,30 @@ class TinyMarketScanner:
                 }
                 for symbol, group in result.groupby("symbol")
             },
+            "horizon_metrics": self._horizon_metrics(result),
         }
+
+    def _horizon_metrics(self, result: pd.DataFrame) -> dict[str, dict]:
+        metrics = {}
+        for horizon in self.config.horizons:
+            actual = f"actual_{horizon}"
+            prediction = f"prediction_{horizon}"
+            if actual not in result or prediction not in result:
+                continue
+            eligible = result[result[actual].notna()]
+            if eligible.empty:
+                continue
+            correct = eligible[prediction] == eligible[actual]
+            low, high = self._wilson_interval(int(correct.sum()), len(eligible))
+            metrics[str(horizon)] = {
+                "rows": int(len(eligible)),
+                "accuracy": float(correct.mean()),
+                "accuracy_ci_95_low": low,
+                "accuracy_ci_95_high": high,
+                "balanced_accuracy": float(balanced_accuracy_score(eligible[actual], eligible[prediction])),
+                "majority_baseline_accuracy": float(eligible[actual].value_counts(normalize=True).max()),
+            }
+        return metrics
 
     def _ensure_trainable(self, train: pd.DataFrame, label: str = "actual") -> None:
         if len(train) < self.config.minimum_training_rows:

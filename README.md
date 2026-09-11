@@ -260,9 +260,12 @@ Historical summaries include majority-baseline accuracy and mark an
 underperforming model as `REJECTED`. A rejected model must not be promoted to
 paper-trade or live-trade use.
 
-The decision gate combines separate 1-, 3-, and 5-candle classifiers. BUY or
-SELL requires sufficient ensemble confidence, agreement from at least two
-horizons, and matching EMA/RSI/volume/price-structure evidence. Historical
+The scanner reports separate accuracy and confidence for its 1-, 3-, and
+5-candle classifiers. The configured 3-candle classifier is the primary
+BUY/SELL/WAIT direction; the other horizons confirm it rather than having their
+probabilities averaged into a mismatched target. BUY or SELL requires sufficient
+primary-model confidence, agreement from at least two horizons, and matching
+EMA/RSI/volume/price-structure evidence. Historical
 training purges rows whose future label crosses the training cutoff. Reports
 also measure whether a 1 ATR target was reached before a 0.75 ATR stop within
 five candles; a same-candle target/stop touch is recorded as `AMBIGUOUS`, never

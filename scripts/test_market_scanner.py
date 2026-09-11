@@ -61,7 +61,12 @@ class ScannerTests(unittest.TestCase):
 
     def test_multi_horizon_and_evidence_are_reported(self):
         result = self.scanner.scan_latest(self.frames)
-        self.assertTrue({"horizon_agreement", "horizon_votes", "evidence"}.issubset(result.columns))
+        expected_columns = {"horizon_agreement", "horizon_votes", "evidence"}
+        for horizon in self.scanner.config.horizons:
+            expected_columns.update({f"prediction_{horizon}", f"confidence_{horizon}"})
+        self.assertTrue(expected_columns.issubset(result.columns))
+        self.assertTrue((result["prediction"] == result[f"prediction_{self.scanner.config.horizon}"]).all())
+        self.assertTrue((result["confidence"] == result[f"confidence_{self.scanner.config.horizon}"]).all())
         traded = result[result["decision"].isin(["BUY", "SELL"])]
         if not traded.empty:
             expected = traded["decision"].map({"BUY": "UP", "SELL": "DOWN"})
@@ -89,6 +94,11 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue((result.groupby("timestamp")["symbol"].nunique() == 3).all())
         self.assertEqual(summary["fold_count"], result["timestamp"].nunique())
         self.assertEqual(summary["mode"], "daily_walk_forward")
+        self.assertEqual(set(summary["horizon_metrics"]), {"1", "3", "5"})
+        for horizon in self.scanner.config.horizons:
+            self.assertTrue((result[f"correct_{horizon}"] == (
+                result[f"prediction_{horizon}"] == result[f"actual_{horizon}"]
+            )).all())
 
     def test_missing_ohlc_is_rejected(self):
         with self.assertRaises(ValueError):
