@@ -67,12 +67,14 @@ def higher_timeframe_bullish_order_blocks(higher: pd.DataFrame) -> pd.DataFrame:
 def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
                                   symbol: str, higher_timeframe: str,
                                   lower_timeframe: str) -> pd.DataFrame:
-    """Buy first lower-TF return to C after B confirmation; target B, stop C low."""
+    """Require the higher TF to return to C, then execute C-to-B on the lower TF."""
     structures = higher_timeframe_bullish_order_blocks(higher)
     if structures.empty:
         return pd.DataFrame()
     data = lower.copy().reset_index(drop=True)
     data["timestamp"] = pd.to_datetime(data["timestamp"], utc=True)
+    higher_data = higher.copy().reset_index(drop=True)
+    higher_data["timestamp"] = pd.to_datetime(higher_data["timestamp"], utc=True)
     records: list[dict] = []
     for structure in structures.to_dict("records"):
         entry = float(structure["zone_high"])
@@ -80,11 +82,26 @@ def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
         target = float(structure["b_price"])
         if not stop < entry < target:
             continue
-        eligible = data.index[data["timestamp"] > structure["tradable_from"]]
-        for signal in eligible:
-            touched = data.at[signal, "low"] <= entry and data.at[signal, "high"] >= stop
-            if not touched:
+        eligible_higher = higher_data.index[higher_data["timestamp"] > structure["tradable_from"]]
+        for return_index in eligible_higher:
+            higher_touched = (
+                higher_data.at[return_index, "low"] <= entry
+                and higher_data.at[return_index, "high"] >= stop
+            )
+            if not higher_touched:
                 continue
+            interval_start = higher_data.at[return_index - 1, "timestamp"]
+            interval_end = higher_data.at[return_index, "timestamp"]
+            lower_window = data.index[
+                (data["timestamp"] > interval_start) & (data["timestamp"] <= interval_end)
+            ]
+            lower_touches = lower_window[
+                (data.loc[lower_window, "low"] <= entry)
+                & (data.loc[lower_window, "high"] >= stop)
+            ]
+            if not len(lower_touches):
+                continue
+            signal = int(lower_touches[0])
             outcome, exit_date, exit_price, holding = "OPEN", None, None, None
             for exited in range(signal, len(data)):
                 target_hit = data.at[exited, "high"] >= target
@@ -101,6 +118,7 @@ def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
             records.append({
                 "symbol": symbol.upper(), "higher_timeframe": higher_timeframe,
                 "lower_timeframe": lower_timeframe, **structure,
+                "higher_return_date": higher_data.at[return_index, "timestamp"],
                 "signal_date": data.at[signal, "timestamp"], "entry_price": entry,
                 "target_price": target, "stop_loss": stop,
                 "reward_risk": (target - entry) / (entry - stop),
