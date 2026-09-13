@@ -490,3 +490,94 @@ def intraday_fvg_previous_high_records(
         pd.DataFrame(records).sort_values("fvg_date", ascending=False)
         .drop_duplicates(["symbol", "signal_date"]).sort_values("signal_date").reset_index(drop=True)
     )
+
+
+def intraday_bearish_fvg_previous_low_records(
+    prepared: pd.DataFrame,
+    symbol: str,
+    start: pd.Timestamp,
+    *,
+    timeframe: str = "1H",
+    maximum_wait_candles: int = 12,
+) -> pd.DataFrame:
+    """Bearish mirror: FVG rejection targeting nearest confirmed prior swing low."""
+    data = prepared.copy().reset_index(drop=True)
+    atr = data["atr_14_pct"] / 100 * data["close"]
+    fvg = (
+        (data["high"] < data["low"].shift(2))
+        & (data["close"] < data["open"])
+        & ((data["open"] - data["close"]) >= 0.4 * atr)
+    )
+    swing_low = (
+        (data["low"] < data["low"].shift(1))
+        & (data["low"] < data["low"].shift(2))
+        & (data["low"] <= data["low"].shift(-1))
+        & (data["low"] <= data["low"].shift(-2))
+    )
+    records = []
+    for created in data.index[fvg.fillna(False)]:
+        zone_low = float(data.loc[created, "high"])
+        zone_high = float(data.loc[created - 2, "low"])
+        for held in range(created + 1, min(created + maximum_wait_candles + 1, len(data))):
+            rejects = (
+                data.loc[held, "high"] >= zone_low - 0.25 * atr.loc[held]
+                and data.loc[held, "close"] <= zone_low
+                and data.loc[held, "close"] <= data.loc[held, "open"]
+            )
+            falling_rsi = (
+                data.loc[held, "rsi_14"] < data.loc[held - 1, "rsi_14"]
+                and data.loc[held, "rsi_change_3"] < 0
+            )
+            if not (rejects and falling_rsi):
+                continue
+            if data.loc[held, "timestamp"] < start:
+                break
+            entry = float(data.loc[held, "close"])
+            known = data.loc[: held - 2]
+            candidates = known.index[
+                swing_low.loc[: held - 2].fillna(False) & (known["low"] < entry)
+            ]
+            if len(candidates) == 0:
+                break
+            previous_low_index = int(candidates[-1])
+            target = float(data.loc[previous_low_index, "low"])
+            stop = float(max(zone_high, data.loc[held, "high"]) + 0.25 * atr.loc[held])
+            risk = stop - entry
+            if risk <= 0 or target >= entry:
+                break
+
+            outcome, exit_date, exit_price, holding_candles = "OPEN", None, None, None
+            for exited in range(held + 1, len(data)):
+                target_hit = data.loc[exited, "low"] <= target
+                stop_hit = data.loc[exited, "high"] >= stop
+                if target_hit and stop_hit:
+                    outcome, exit_date, holding_candles = "AMBIGUOUS", data.loc[exited, "timestamp"], exited - held
+                    break
+                if target_hit:
+                    outcome, exit_date, exit_price, holding_candles = "TARGET", data.loc[exited, "timestamp"], target, exited - held
+                    break
+                if stop_hit:
+                    outcome, exit_date, exit_price, holding_candles = "STOP", data.loc[exited, "timestamp"], stop, exited - held
+                    break
+
+            pnl_pct = ((entry - exit_price) / entry) * 100 if exit_price is not None else None
+            records.append({
+                "symbol": symbol.upper(), "timeframe": timeframe.upper(), "direction": "SHORT",
+                "fvg_date": data.loc[created, "timestamp"], "signal_date": data.loc[held, "timestamp"],
+                "previous_low_date": data.loc[previous_low_index, "timestamp"],
+                "entry_price": entry, "target_price": target, "stop_loss": stop,
+                "reward_risk": (entry - target) / risk, "rsi_14": float(data.loc[held, "rsi_14"]),
+                "price_change_3_pct": float(data.loc[held, "return_3"]),
+                "volume_change_3_pct": float(
+                    (data.loc[held, "volume"] / data.loc[held - 3, "volume"] - 1) * 100
+                ) if data.loc[held - 3, "volume"] > 0 else None,
+                "outcome": outcome, "exit_date": exit_date, "exit_price": exit_price,
+                "holding_candles": holding_candles, "pnl_pct": pnl_pct,
+            })
+            break
+    if not records:
+        return pd.DataFrame()
+    return (
+        pd.DataFrame(records).sort_values("fvg_date", ascending=False)
+        .drop_duplicates(["symbol", "signal_date"]).sort_values("signal_date").reset_index(drop=True)
+    )
