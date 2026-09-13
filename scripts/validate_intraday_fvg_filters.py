@@ -37,10 +37,11 @@ def candidate_mask(records: pd.DataFrame, variant: str) -> pd.Series:
     return masks[variant]
 
 
-def metrics(records: pd.DataFrame, period: str, variant: str) -> dict:
+def metrics(records: pd.DataFrame, symbol: str, period: str, variant: str) -> dict:
     resolved = records[records["outcome"].isin(["TARGET", "STOP", "TIME_EXIT"])]
     profitable = int((resolved["pnl_pct"] > 0).sum())
     return {
+        "symbol": symbol,
         "period": period,
         "variant": variant,
         "signals": len(records),
@@ -65,21 +66,34 @@ def main() -> None:
         ledgers.append(fvg_trade_records(prepared, symbol, START, timeframe="1H"))
 
     trades = pd.concat(ledgers, ignore_index=True)
-    development = trades[trades["signal_date"] < VALIDATION_START]
-    validation = trades[trades["signal_date"] >= VALIDATION_START]
     variants = ("BASE", "EMA_TREND", "VOLUME", "EMA_TREND_VOLUME")
     rows = []
-    for variant in variants:
-        rows.append(metrics(development[candidate_mask(development, variant)], "DEVELOPMENT_JAN_MAY", variant))
-        rows.append(metrics(validation[candidate_mask(validation, variant)], "UNSEEN_JUN_ONWARD", variant))
+    for symbol in SYMBOLS:
+        stock_trades = trades[trades["symbol"] == symbol]
+        development = stock_trades[stock_trades["signal_date"] < VALIDATION_START]
+        validation = stock_trades[stock_trades["signal_date"] >= VALIDATION_START]
+        for variant in variants:
+            rows.append(metrics(
+                development[candidate_mask(development, variant)],
+                symbol,
+                "DEVELOPMENT_JAN_MAY",
+                variant,
+            ))
+            rows.append(metrics(
+                validation[candidate_mask(validation, variant)],
+                symbol,
+                "UNSEEN_JUN_ONWARD",
+                variant,
+            ))
 
     results = pd.DataFrame(rows)
-    eligible = results[
+    eligible_rows = results[
         (results["period"] == "UNSEEN_JUN_ONWARD")
         & (results["resolved"] >= 10)
         & (results["success_rate_pct"] >= 70)
         & (results["average_pnl_pct"] > 0)
-    ]["variant"].tolist()
+    ][["symbol", "variant"]]
+    eligible = eligible_rows.to_dict("records")
 
     output = ROOT / "data" / "research"
     output.mkdir(parents=True, exist_ok=True)
@@ -90,12 +104,14 @@ def main() -> None:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "development_period": "2026-01-01 through 2026-05-31",
         "unseen_period": "2026-06-01 onward",
-        "activation_rule": "unseen resolved >= 10, success >= 70%, average P&L > 0",
+        "activation_rule": "per stock: unseen resolved >= 10, success >= 70%, average P&L > 0",
         "eligible_variants": eligible,
         "results": results.to_dict("records"),
     }, indent=2, default=str), encoding="utf-8")
 
-    print(results.to_string(index=False))
+    for symbol in SYMBOLS:
+        print(f"\n{'=' * 22} {symbol} {'=' * 22}")
+        print(results[results["symbol"] == symbol].to_string(index=False))
     print(f"\n[ELIGIBLE] {eligible if eligible else 'NONE - keep 1H setup disabled'}")
     print(f"[RECORD] {json_path}")
 
