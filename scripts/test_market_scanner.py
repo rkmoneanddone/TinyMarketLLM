@@ -24,6 +24,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     rsi_reversal_history,
     breakout_pullback_history,
     morning_star_history,
+    weekly_fvg_hold_sequences,
 )
 
 
@@ -270,6 +271,13 @@ class ScannerTests(unittest.TestCase):
         frame.loc[29, ["open", "high", "low", "close"]] = [99.0, 102.0, 98.5, 101.5]
         result = morning_star_history(frame, "TCS")
         self.assertEqual(result.iloc[-1]["setup"], "MORNING_STAR_AT_SUPPORT")
+
+    def test_weekly_fvg_sequences_do_not_duplicate_one_hold(self):
+        weekly = resample_ohlc(sample(61, rows=700), "W-FRI")
+        prepared = self.scanner.prepare(weekly)
+        result = weekly_fvg_hold_sequences(prepared, "GRASIM")
+        if len(result):
+            self.assertFalse(result[["symbol", "hold_date"]].duplicated().any())
 
 
 if __name__ == "__main__":

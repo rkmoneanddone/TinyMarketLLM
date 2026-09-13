@@ -280,3 +280,49 @@ def morning_star_history(prepared: pd.DataFrame, symbol: str) -> pd.DataFrame:
         result["trade_outcome"] = "NO_SETUP"
         result.loc[pattern, "trade_outcome"] = data.loc[pattern, "buy_trade_outcome"]
     return result
+
+
+def weekly_fvg_hold_sequences(
+    prepared: pd.DataFrame,
+    symbol: str,
+    maximum_wait_weeks: int = 12,
+    expansion_weeks: int = 8,
+) -> pd.DataFrame:
+    """Find bullish FVG creation, later hold with rising RSI, then prior-high test."""
+    data = prepared.copy().reset_index(drop=True)
+    atr = data["atr_14_pct"] / 100 * data["close"]
+    bullish_fvg = (
+        (data["low"] > data["high"].shift(2))
+        & (data["close"] > data["open"])
+        & ((data["close"] - data["open"]) >= 0.4 * atr)
+    )
+    prior_highs = data["high"].shift(1).rolling(20, min_periods=20).max()
+    records = []
+    for created in data.index[bullish_fvg.fillna(False)]:
+        zone_low = float(data.loc[created - 2, "high"])
+        zone_high = float(data.loc[created, "low"])
+        prior_high = float(prior_highs.loc[created])
+        for held in range(created + 1, min(created + maximum_wait_weeks + 1, len(data))):
+            tolerance = 0.25 * atr.loc[held]
+            touches = data.loc[held, "low"] <= zone_high + tolerance
+            holds = touches and data.loc[held, "close"] >= zone_high and data.loc[held, "close"] >= data.loc[held, "open"]
+            rsi_rising = data.loc[held, "rsi_14"] > data.loc[held - 1, "rsi_14"] and data.loc[held, "rsi_change_3"] > 0
+            if not (holds and rsi_rising):
+                continue
+            future = data.iloc[held + 1:min(held + expansion_weeks + 1, len(data))]
+            reached = future[future["high"] >= prior_high * 0.99]
+            records.append({
+                "symbol": symbol.upper(), "timeframe": "1W",
+                "fvg_date": data.loc[created, "timestamp"], "hold_date": data.loc[held, "timestamp"],
+                "fvg_zone_low": zone_low, "fvg_zone_high": zone_high,
+                "hold_close": float(data.loc[held, "close"]), "hold_rsi_14": float(data.loc[held, "rsi_14"]),
+                "prior_20w_high": prior_high, "reached_prior_high": not reached.empty,
+                "weeks_to_prior_high": int(reached.index[0] - held) if not reached.empty else None,
+                "maximum_8w_move_pct": float((future["high"].max() / data.loc[held, "close"] - 1) * 100) if len(future) else None,
+            })
+            break
+    if not records:
+        return pd.DataFrame()
+    result = pd.DataFrame(records)
+    # One hold candle is one market event even when several stacked FVGs overlap.
+    return result.sort_values("fvg_date", ascending=False).drop_duplicates(["symbol", "hold_date"]).sort_values("hold_date").reset_index(drop=True)
