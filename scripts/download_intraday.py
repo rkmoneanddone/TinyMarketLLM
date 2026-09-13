@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -22,6 +23,8 @@ from src.tiny_market_llm.market.timestamp_normalizer import normalize_timestamp_
 UNIVERSE_PATH = ROOT / "data" / "dhan" / "stock-list" / "stock_universe.json"
 REQUIRED_COLUMNS = ("timestamp", "open", "high", "low", "close", "volume")
 SUPPORTED_INTERVALS = {1, 5, 15, 25, 60}
+MAX_RATE_LIMIT_RETRIES = 6
+REQUEST_PAUSE_SECONDS = 1.1
 
 
 def parse_args() -> argparse.Namespace:
@@ -83,18 +86,31 @@ def fetch_symbol(dhan: dhanhq, stock: dict, start: date, end: date, interval: in
     cursor = start
     while cursor <= end:
         chunk_end = min(cursor + timedelta(days=84), end)
-        response = dhan.intraday_minute_data(
-            security_id=str(stock["security_id"]),
-            exchange_segment=stock.get("exchange_segment", "NSE_EQ"),
-            instrument_type="EQUITY",
-            from_date=cursor.isoformat(),
-            to_date=chunk_end.isoformat(),
-            interval=interval,
-        )
+        response = None
+        for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+            response = dhan.intraday_minute_data(
+                security_id=str(stock["security_id"]),
+                exchange_segment=stock.get("exchange_segment", "NSE_EQ"),
+                instrument_type="EQUITY",
+                from_date=cursor.isoformat(),
+                to_date=chunk_end.isoformat(),
+                interval=interval,
+            )
+            remarks = response.get("remarks", {}) if isinstance(response, dict) else {}
+            error_code = remarks.get("error_code") if isinstance(remarks, dict) else None
+            if error_code != "DH-904":
+                break
+            if attempt == MAX_RATE_LIMIT_RETRIES:
+                raise RuntimeError("Dhan rate limit remained active after automatic retries.")
+            wait_seconds = min(2 ** attempt, 30)
+            print(f"[WAIT] Dhan rate limit; retrying in {wait_seconds}s")
+            time.sleep(wait_seconds)
+        assert response is not None
         frame = response_frame(response)
         if not frame.empty:
             frames.append(frame)
         cursor = chunk_end + timedelta(days=1)
+        time.sleep(REQUEST_PAUSE_SECONDS)
     if not frames:
         return pd.DataFrame(columns=REQUIRED_COLUMNS)
     return (
