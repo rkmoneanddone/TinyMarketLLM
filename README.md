@@ -301,3 +301,15 @@ retests, and support/resistance rejections. A BUY or SELL requires a detected
 setup plus matching model direction, multi-horizon agreement, technical
 evidence, and confidence. Every setup is also evaluated independently by
 target-before-stop outcome in historical reports; otherwise the result is WAIT.
+
+Before allowing the probability model to veto or approve setups, evaluate the
+setups themselves over all locally stored history:
+
+```powershell
+python scripts\evaluate_trade_setups.py
+```
+
+This fast evaluator does not retrain the model. It removes overlapping repeated
+signals using the five-candle trade window, reports expectancy before costs,
+and requires at least 20 resolved events across at least two stocks whose 95%
+target-rate lower bound exceeds the strategy breakeven rate.

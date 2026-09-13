@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.tiny_market_llm.scanner import ScannerConfig, TinyMarketScanner
+from scripts.evaluate_trade_setups import independent_events
 
 
 def sample(seed: int, rows: int = 500) -> pd.DataFrame:
@@ -136,6 +137,14 @@ class ScannerTests(unittest.TestCase):
     def test_unknown_feature_family_is_rejected(self):
         with self.assertRaises(ValueError):
             TinyMarketScanner(ScannerConfig(feature_set="unknown"))
+
+    def test_setup_cooldown_removes_overlapping_events(self):
+        events = pd.DataFrame([
+            {"symbol": "TCS", "setup_name": "EMA_BULL_PULLBACK", "bar_index": value}
+            for value in (10, 11, 14, 15, 21)
+        ])
+        result = independent_events(events, cooldown=5)
+        self.assertEqual(result["bar_index"].tolist(), [10, 15, 21])
 
     def test_small_trade_sample_cannot_be_promoted(self):
         low, high = self.scanner._wilson_interval(4, 5)
