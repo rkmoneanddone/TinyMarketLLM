@@ -22,6 +22,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     ema_alignment_history,
     resample_ohlc,
     rsi_reversal_history,
+    breakout_pullback_history,
 )
 
 
@@ -241,6 +242,17 @@ class ScannerTests(unittest.TestCase):
         })
         result = rsi_reversal_history(prepared, "TCS", "DAILY")
         self.assertEqual(result.iloc[-1]["setup"], "RSI_RECLAIM_25_LONG")
+
+    def test_breakout_fvg_pullback_uses_only_prior_zone(self):
+        frame = sample(41, rows=30)
+        frame[["open", "high", "low", "close"]] = [99.0, 100.0, 98.0, 99.0]
+        frame.loc[20, ["open", "high", "low", "close"]] = [101.0, 106.0, 103.0, 105.0]
+        frame.loc[21, ["open", "high", "low", "close"]] = [102.0, 105.0, 100.0, 104.0]
+        frame["buy_trade_outcome"] = "TARGET"
+        result = breakout_pullback_history(frame, "TCS")
+        self.assertIn("BREAKOUT_FVG_PULLBACK", set(result["setup"]))
+        event = result[result["setup"] == "BREAKOUT_FVG_PULLBACK"].iloc[0]
+        self.assertGreater(event["bar_index"], event["breakout_bar_index"])
 
 
 if __name__ == "__main__":

@@ -202,3 +202,52 @@ def rsi_reversal_history(prepared: pd.DataFrame, symbol: str, timeframe: str) ->
         result.loc[long_entry, "trade_outcome"] = data.loc[long_entry, "buy_trade_outcome"]
         result.loc[short_entry, "trade_outcome"] = data.loc[short_entry, "sell_trade_outcome"]
     return result
+
+
+def breakout_pullback_history(
+    prepared: pd.DataFrame,
+    symbol: str,
+    zone_lifetime_candles: int = 10,
+) -> pd.DataFrame:
+    """Detect objective bullish breakout pullbacks into OB and FVG zones."""
+    data = prepared.copy().reset_index(drop=True)
+    prior_high = data["high"].shift(1).rolling(20, min_periods=20).max()
+    breakout = data["close"] > prior_high
+    events: list[dict] = []
+    active: list[dict] = []
+    for index, row in data.iterrows():
+        remaining = []
+        for zone in active:
+            if index > zone["expires"]:
+                continue
+            touched = row["low"] <= zone["high"] and row["high"] >= zone["low"]
+            confirmed = touched and row["close"] > zone["high"] and row["close"] > row["open"]
+            if confirmed:
+                events.append({
+                    "timestamp": row["timestamp"], "symbol": symbol.upper(), "bar_index": index,
+                    "setup": zone["setup"], "zone_low": zone["low"], "zone_high": zone["high"],
+                    "breakout_bar_index": zone["created"],
+                    "trade_outcome": row.get("buy_trade_outcome", "UNKNOWN"),
+                })
+            else:
+                remaining.append(zone)
+        active = remaining
+        if not bool(breakout.iloc[index]):
+            continue
+        prior = data.iloc[max(0, index - 5):index]
+        bearish = prior[prior["close"] < prior["open"]]
+        if not bearish.empty:
+            candle = bearish.iloc[-1]
+            active.append({
+                "setup": "BREAKOUT_ORDER_BLOCK_PULLBACK", "low": float(candle["low"]),
+                "high": float(candle["open"]), "created": index, "expires": index + zone_lifetime_candles,
+            })
+        if index >= 2 and row["low"] > data.loc[index - 2, "high"]:
+            active.append({
+                "setup": "BREAKOUT_FVG_PULLBACK", "low": float(data.loc[index - 2, "high"]),
+                "high": float(row["low"]), "created": index, "expires": index + zone_lifetime_candles,
+            })
+    return pd.DataFrame(events, columns=[
+        "timestamp", "symbol", "bar_index", "setup", "zone_low", "zone_high",
+        "breakout_bar_index", "trade_outcome",
+    ])

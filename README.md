@@ -359,3 +359,11 @@ daily OHLCV into completed weekly and monthly candles and evaluates RSI reversal
 separately for every timeframe. RSI below 25 or above 80 is informational; an
 entry requires a bullish reclaim of 25 or bearish rejection of 80 plus candle
 confirmation and successful discovery/unseen validation.
+
+## Breakout order-block/FVG pullback section
+
+`python scripts\run_market_sections.py --section breakout-pullback` uses fixed,
+causal definitions: a bullish FVG is `low[t] > high[t-2]`; an order block is the
+last bearish candle within five bars before a 20-day-high breakout. A later
+bullish candle must touch and reclaim the stored zone within ten candles. Each
+setup is independently validated before it can produce BUY.

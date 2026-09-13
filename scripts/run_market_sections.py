@@ -20,6 +20,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     ema_alignment_history,
     resample_ohlc,
     rsi_reversal_history,
+    breakout_pullback_history,
 )
 
 
@@ -32,7 +33,9 @@ SWING_HORIZONS = {
 def main() -> None:
     parser = argparse.ArgumentParser(description="Offline TinyMarketLLM market sections")
     parser.add_argument(
-        "--section", choices=("high-breakouts", "next-day", "swing", "ema-alignment", "rsi-reversal"),
+        "--section", choices=(
+            "high-breakouts", "next-day", "swing", "ema-alignment", "rsi-reversal", "breakout-pullback",
+        ),
         default="high-breakouts",
     )
     parser.add_argument("--symbol", choices=("GRASIM", "RELIANCE", "TCS"))
@@ -55,6 +58,9 @@ def main() -> None:
         return
     if args.section == "rsi-reversal":
         run_rsi_reversal_section(config, frames, scanner)
+        return
+    if args.section == "breakout-pullback":
+        run_breakout_pullback_section(config, frames, scanner)
         return
 
     histories = []
@@ -321,6 +327,62 @@ def run_rsi_reversal_section(config: dict, frames: dict[str, pd.DataFrame], scan
     }
     report = write_report(rows, summary, config, "section_rsi_reversal")
     print(rows.to_string(index=False))
+    print(f"\n[REPORT] {report}")
+
+
+def run_breakout_pullback_section(config: dict, frames: dict[str, pd.DataFrame], scanner) -> None:
+    events = []
+    latest_timestamp = None
+    latest_close = {}
+    for symbol, frame in frames.items():
+        prepared = scanner.prepare(frame)
+        events.append(breakout_pullback_history(prepared, symbol))
+        latest_timestamp = prepared.iloc[-1]["timestamp"]
+        latest_close[symbol] = float(prepared.iloc[-1]["close"])
+    all_events = pd.concat(events, ignore_index=True)
+    cutoff = pd.Timestamp("2024-01-01", tz="UTC")
+    metrics = []
+    approved = []
+    for setup_name, group in all_events.groupby("setup"):
+        record = {"setup": setup_name}
+        credible = True
+        for label, sample in (
+            ("discovery", group[group["timestamp"] < cutoff]),
+            ("unseen", group[group["timestamp"] >= cutoff]),
+        ):
+            resolved = sample[sample["trade_outcome"].isin(["TARGET", "STOP"])]
+            targets = int((resolved["trade_outcome"] == "TARGET").sum())
+            low, _ = scanner._wilson_interval(targets, len(resolved))
+            record.update({
+                f"{label}_resolved": int(len(resolved)),
+                f"{label}_target_rate": targets / len(resolved) if len(resolved) else None,
+                f"{label}_ci_95_low": low,
+            })
+            credible &= len(resolved) >= 20 and low is not None and low > 3 / 7
+        record["approved"] = credible
+        if credible:
+            approved.append(setup_name)
+        metrics.append(record)
+    recent_cutoff = latest_timestamp - pd.Timedelta(days=15)
+    recent = all_events[all_events["timestamp"] >= recent_cutoff]
+    rows = []
+    for symbol, close in latest_close.items():
+        matches = recent[(recent["symbol"] == symbol) & recent["setup"].isin(approved)]
+        rows.append({
+            "timestamp": latest_timestamp, "symbol": symbol, "close": close,
+            "setup": "|".join(sorted(matches["setup"].unique())) if len(matches) else "NONE",
+            "decision": "BUY" if len(matches) else "WAIT",
+            "reason": "Validated recent breakout pullback" if len(matches) else "No recent validated OB/FVG pullback",
+        })
+    output = pd.DataFrame(rows)
+    summary = {
+        "section": "breakout_order_block_fvg_pullback",
+        "data_policy": "local_only_maximum_10_years", "validation_cutoff": str(cutoff),
+        "approved_setups": approved, "metrics": metrics,
+        "definitions": {"fvg": "low[t] > high[t-2]", "order_block": "last bearish candle within 5 bars before breakout", "zone_lifetime": 10},
+    }
+    report = write_report(output, summary, config, "section_breakout_pullback")
+    print(output.to_string(index=False))
     print(f"\n[REPORT] {report}")
 
 
