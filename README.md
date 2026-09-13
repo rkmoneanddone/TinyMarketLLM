@@ -320,6 +320,10 @@ reach BUY or SELL. The optional `compact` feature profile uses candle behaviour,
 EMA trend, RSI momentum, and relative volume; it is research-only unless unseen
 walk-forward tests outperform the configured `core` profile.
 
+The default allowlist is empty. Full-history performance alone cannot enable a
+setup: it must remain positive in chronological discovery and unseen periods.
+Until that requirement is met, all live scanner outputs are WAIT.
+
 ## 10-year high-breakout section
 
 `python scripts\run_market_sections.py --section high-breakouts` creates an

@@ -161,6 +161,11 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue(scanner._has_eligible_setup("EMA_BULL_CROSS|BREAKOUT_VOLUME"))
         self.assertFalse(scanner._has_eligible_setup("EMA_BULL_CROSS"))
 
+    def test_default_scanner_has_no_unvalidated_trade_setup(self):
+        scanner = TinyMarketScanner()
+        self.assertEqual(scanner.config.eligible_setups, ())
+        self.assertFalse(scanner._has_eligible_setup("BREAKOUT_VOLUME"))
+
     def test_setup_cooldown_removes_overlapping_events(self):
         events = pd.DataFrame([
             {"symbol": "TCS", "setup_name": "EMA_BULL_PULLBACK", "bar_index": value}

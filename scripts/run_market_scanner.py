@@ -51,7 +51,7 @@ def scanner_from(config: dict, feature_set: str | None = None) -> TinyMarketScan
         minimum_resolved_trades=config["minimum_resolved_trades"],
         minimum_trade_symbols=config["minimum_trade_symbols"],
         feature_set=feature_set or config.get("feature_set", "core"),
-        eligible_setups=tuple(config.get("eligible_setups", ("BREAKOUT_VOLUME", "BREAKOUT_RETEST"))),
+        eligible_setups=tuple(config.get("eligible_setups", ())),
     ))
 
 

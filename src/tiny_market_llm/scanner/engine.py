@@ -52,7 +52,7 @@ class ScannerConfig:
     minimum_resolved_trades: int = 20
     minimum_trade_symbols: int = 2
     feature_set: str = "core"
-    eligible_setups: tuple[str, ...] = ("BREAKOUT_VOLUME", "BREAKOUT_RETEST")
+    eligible_setups: tuple[str, ...] = ()
 
 
 class TinyMarketScanner:
