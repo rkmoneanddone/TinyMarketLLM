@@ -330,8 +330,16 @@ def weekly_fvg_hold_sequences(
     return result.sort_values("fvg_date", ascending=False).drop_duplicates(["symbol", "hold_date"]).sort_values("hold_date").reset_index(drop=True)
 
 
-def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Timestamp) -> pd.DataFrame:
-    """Create causal daily FVG paper trades with a minimum 1:1 reward/risk."""
+def fvg_trade_records(
+    prepared: pd.DataFrame,
+    symbol: str,
+    start: pd.Timestamp,
+    *,
+    timeframe: str,
+    maximum_wait_candles: int = 12,
+    evaluation_candles: int = 20,
+) -> pd.DataFrame:
+    """Create causal FVG paper trades with a minimum 1:1 reward/risk."""
     data = prepared.copy().reset_index(drop=True)
     atr = data["atr_14_pct"] / 100 * data["close"]
     fvg = (data["low"] > data["high"].shift(2)) & (data["close"] > data["open"]) & ((data["close"] - data["open"]) >= 0.4 * atr)
@@ -340,7 +348,7 @@ def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Times
     for created in data.index[fvg.fillna(False)]:
         zone_low, zone_high = float(data.loc[created - 2, "high"]), float(data.loc[created, "low"])
         resistance = float(prior_high.loc[created])
-        for held in range(created + 1, min(created + 13, len(data))):
+        for held in range(created + 1, min(created + maximum_wait_candles + 1, len(data))):
             holds = data.loc[held, "low"] <= zone_high + 0.25 * atr.loc[held] and data.loc[held, "close"] >= zone_high and data.loc[held, "close"] >= data.loc[held, "open"]
             rising = data.loc[held, "rsi_14"] > data.loc[held - 1, "rsi_14"] and data.loc[held, "rsi_change_3"] > 0
             if not (holds and rising):
@@ -354,7 +362,7 @@ def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Times
                 break
             target = max(resistance, entry + risk)
             outcome, exit_date, exit_price = "OPEN", None, None
-            for exited in range(held + 1, min(held + 21, len(data))):
+            for exited in range(held + 1, min(held + evaluation_candles + 1, len(data))):
                 target_hit, stop_hit = data.loc[exited, "high"] >= target, data.loc[exited, "low"] <= stop
                 if target_hit and stop_hit:
                     outcome, exit_date = "AMBIGUOUS", data.loc[exited, "timestamp"]
@@ -365,11 +373,11 @@ def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Times
                 if stop_hit:
                     outcome, exit_date, exit_price = "STOP", data.loc[exited, "timestamp"], stop
                     break
-            if outcome == "OPEN" and held + 20 < len(data):
-                exited = held + 20
+            if outcome == "OPEN" and held + evaluation_candles < len(data):
+                exited = held + evaluation_candles
                 outcome, exit_date, exit_price = "TIME_EXIT", data.loc[exited, "timestamp"], float(data.loc[exited, "close"])
             records.append({
-                "symbol": symbol.upper(), "timeframe": "1D", "fvg_date": data.loc[created, "timestamp"],
+                "symbol": symbol.upper(), "timeframe": timeframe.upper(), "fvg_date": data.loc[created, "timestamp"],
                 "signal_date": data.loc[held, "timestamp"], "buy_price": entry, "sell_target": target,
                 "stop_loss": stop, "reward_risk": (target - entry) / risk, "rsi_14": float(data.loc[held, "rsi_14"]),
                 "outcome": outcome, "exit_date": exit_date, "exit_price": exit_price,
@@ -379,3 +387,8 @@ def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Times
     if not records:
         return pd.DataFrame()
     return pd.DataFrame(records).sort_values("fvg_date", ascending=False).drop_duplicates(["symbol", "signal_date"]).sort_values("signal_date").reset_index(drop=True)
+
+
+def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Timestamp) -> pd.DataFrame:
+    """Backward-compatible daily FVG paper-trade entry point."""
+    return fvg_trade_records(prepared, symbol, start, timeframe="1D")
