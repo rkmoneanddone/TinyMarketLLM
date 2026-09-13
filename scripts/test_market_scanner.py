@@ -25,6 +25,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     breakout_pullback_history,
     morning_star_history,
     weekly_fvg_hold_sequences,
+    daily_fvg_trade_records,
 )
 
 
@@ -278,6 +279,12 @@ class ScannerTests(unittest.TestCase):
         result = weekly_fvg_hold_sequences(prepared, "GRASIM")
         if len(result):
             self.assertFalse(result[["symbol", "hold_date"]].duplicated().any())
+
+    def test_daily_fvg_trades_never_offer_less_than_one_risk_reward(self):
+        prepared = self.scanner.prepare(sample(71, rows=700))
+        result = daily_fvg_trade_records(prepared, "GRASIM", pd.Timestamp("2020-01-01", tz="UTC"))
+        if len(result):
+            self.assertTrue((result["reward_risk"] >= 1.0).all())
 
 
 if __name__ == "__main__":

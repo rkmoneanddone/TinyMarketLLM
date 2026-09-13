@@ -24,11 +24,13 @@ def main() -> None:
     csv_path = research / "GRASIM_weekly_fvg_sequences.csv"
     json_path = research / "GRASIM_weekly_fvg_sequences.json"
     records.to_csv(csv_path, index=False)
-    successes = int(records["reached_prior_high"].sum())
+    valid = records[records["target_above_entry"]]
+    successes = int(valid["reached_prior_high"].sum())
     summary = {
         "symbol": "GRASIM", "timeframe": "1W", "weekly_candles": len(weekly),
-        "independent_sequences": len(records), "reached_prior_high": successes,
-        "success_rate": successes / len(records) if len(records) else None,
+        "independent_sequences": len(records), "trade_valid_sequences": len(valid),
+        "reached_prior_high": successes,
+        "success_rate": successes / len(valid) if len(valid) else None,
         "definition": "bullish FVG -> hold within 12 weeks -> RSI rising -> prior 20-week high within 8 weeks",
     }
     json_path.write_text(json.dumps({"summary": summary, "records": records.to_dict("records")}, indent=2, default=str), encoding="utf-8")

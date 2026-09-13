@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "symbol": "GRASIM",
+    "timeframe": "1D",
+    "start": "2026-01-01",
+    "signals": 5,
+    "targets_hit": 3,
+    "stops_hit": 0,
+    "open": 1,
+    "minimum_reward_risk": 1.0
+  },
+  "records": [
+    {
+      "symbol": "GRASIM",
+      "timeframe": "1D",
+      "fvg_date": "2026-02-04 18:30:00+00:00",
+      "signal_date": "2026-02-05 18:30:00+00:00",
+      "buy_price": 2863.9,
+      "sell_target": 2962.264285714286,
+      "stop_loss": 2765.535714285714,
+      "reward_risk": 1.0,
+      "rsi_14": 57.34302785351363,
+      "outcome": "TARGET",
+      "exit_date": "2026-02-11 18:30:00+00:00",
+      "exit_price": 2962.264285714286,
+      "pnl_pct": 3.4346271068921963
+    },
+    {
+      "symbol": "GRASIM",
+      "timeframe": "1D",
+      "fvg_date": "2026-04-08 18:30:00+00:00",
+      "signal_date": "2026-04-17 18:30:00+00:00",
+      "buy_price": 2720.5,
+      "sell_target": 2834.6124999999997,
+      "stop_loss": 2606.3875000000003,
+      "reward_risk": 1.0,
+      "rsi_14": 52.690031573616906,
+      "outcome": "TARGET",
+      "exit_date": "2026-04-28 18:30:00+00:00",
+      "exit_price": 2834.6124999999997,
+      "pnl_pct": 4.194541444587374
+    },
+    {
+      "symbol": "GRASIM",
+      "timeframe": "1D",
+      "fvg_date": "2026-05-07 18:30:00+00:00",
+      "signal_date": "2026-05-20 18:30:00+00:00",
+      "buy_price": 2971.1,
+      "sell_target": 3079.0339285714285,
+      "stop_loss": 2863.1660714285713,
+      "reward_risk": 1.0,
+      "rsi_14": 65.5083800792288,
+      "outcome": "TARGET",
+      "exit_date": "2026-05-21 18:30:00+00:00",
+      "exit_price": 3079.0339285714285,
+      "pnl_pct": 3.632793530053813
+    },
+    {
+      "symbol": "GRASIM",
+      "timeframe": "1D",
+      "fvg_date": "2026-07-21 18:30:00+00:00",
+      "signal_date": "2026-08-03 18:30:00+00:00",
+      "buy_price": 3260.0,
+      "sell_target": 3431.1321428571428,
+      "stop_loss": 3088.8678571428572,
+      "reward_risk": 1.0,
+      "rsi_14": 64.91056968049293,
+      "outcome": "TIME_EXIT",
+      "exit_date": "2026-08-31 18:30:00+00:00",
+      "exit_price": 3371.0,
+      "pnl_pct": 3.404907975460114
+    },
+    {
+      "symbol": "GRASIM",
+      "timeframe": "1D",
+      "fvg_date": "2026-08-10 18:30:00+00:00",
+      "signal_date": "2026-08-20 18:30:00+00:00",
+      "buy_price": 3300.0,
+      "sell_target": 3390.7749999999996,
+      "stop_loss": 3209.2250000000004,
+      "reward_risk": 1.0,
+      "rsi_14": 58.59936551626812,
+      "outcome": "OPEN",
+      "exit_date": "NaT",
+      "exit_price": NaN,
+      "pnl_pct": NaN
+    }
+  ]
+}
