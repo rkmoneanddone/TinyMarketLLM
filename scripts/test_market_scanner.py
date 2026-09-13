@@ -19,6 +19,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     independent_breakouts,
     next_day_setup_events,
     swing_setup_events,
+    ema_alignment_history,
 )
 
 
@@ -210,6 +211,18 @@ class ScannerTests(unittest.TestCase):
         )
         self.assertEqual(result["bar_index"].tolist(), [0, 5, 10])
         self.assertTrue(result["success_after_cost_buffer"].all())
+
+    def test_ema_alignment_requires_stack_and_new_price_transition(self):
+        frame = pd.DataFrame({
+            "timestamp": pd.date_range("2025-01-01", periods=230, freq="D", tz="UTC"),
+            "open": [100.0] * 229 + [100.0],
+            "close": [100.0] * 229 + [110.0],
+        })
+        result = ema_alignment_history(frame, "TCS")
+        latest = result.iloc[-1]
+        self.assertTrue(latest["above_all_emas"])
+        self.assertTrue(latest["bull_stack"])
+        self.assertEqual(latest["setup"], "EMA_9_21_50_200_LONG")
 
 
 if __name__ == "__main__":

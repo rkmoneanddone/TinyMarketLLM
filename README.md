@@ -343,3 +343,11 @@ and 1/2/3-month horizons independently from daily candles. Events cannot overlap
 within their own horizon. Promotion requires at least 20 events, positive mean
 return after a 0.2% buffer, and a 95% success-rate lower bound above 50% in both
 the discovery and unseen periods; otherwise the horizon reports WAIT.
+
+## EMA 9/21/50/200 alignment section
+
+`python scripts\run_market_sections.py --section ema-alignment` reports whether
+price is above or below all four EMAs and whether the averages form a proper
+bullish or bearish stack. A setup occurs only on a new candle transition through
+the complete stack and is trade-eligible only after discovery and unseen
+target-before-stop validation.

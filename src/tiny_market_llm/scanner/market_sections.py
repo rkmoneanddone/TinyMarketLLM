@@ -136,3 +136,36 @@ def swing_setup_events(
                 })
                 last_bar = bar_index
     return pd.DataFrame(records)
+
+
+def ema_alignment_history(frame: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    """Detect causal price transitions through a 9/21/50/200 EMA stack."""
+    required = {"timestamp", "open", "close"}
+    missing = required - set(frame.columns)
+    if missing:
+        raise ValueError(f"Missing EMA-alignment columns: {sorted(missing)}")
+    data = frame.copy().sort_values("timestamp").drop_duplicates("timestamp").reset_index(drop=True)
+    emas = {span: data["close"].ewm(span=span, adjust=False, min_periods=span).mean() for span in (9, 21, 50, 200)}
+    maximum = pd.concat(emas.values(), axis=1).max(axis=1)
+    minimum = pd.concat(emas.values(), axis=1).min(axis=1)
+    above_all = data["close"] > maximum
+    below_all = data["close"] < minimum
+    bull_stack = (emas[9] > emas[21]) & (emas[21] > emas[50]) & (emas[50] > emas[200])
+    bear_stack = (emas[9] < emas[21]) & (emas[21] < emas[50]) & (emas[50] < emas[200])
+    long_entry = above_all & ~above_all.shift(1, fill_value=False) & bull_stack & (data["close"] > data["open"])
+    short_entry = below_all & ~below_all.shift(1, fill_value=False) & bear_stack & (data["close"] < data["open"])
+    result = pd.DataFrame({
+        "timestamp": data["timestamp"], "symbol": symbol.upper(), "close": data["close"],
+        "ema_9": emas[9], "ema_21": emas[21], "ema_50": emas[50], "ema_200": emas[200],
+        "above_all_emas": above_all, "below_all_emas": below_all,
+        "bull_stack": bull_stack, "bear_stack": bear_stack,
+        "long_entry": long_entry, "short_entry": short_entry,
+    })
+    result["setup"] = "NONE"
+    result.loc[long_entry, "setup"] = "EMA_9_21_50_200_LONG"
+    result.loc[short_entry, "setup"] = "EMA_9_21_50_200_SHORT"
+    if "buy_trade_outcome" in data:
+        result["trade_outcome"] = "NO_SETUP"
+        result.loc[long_entry, "trade_outcome"] = data.loc[long_entry, "buy_trade_outcome"]
+        result.loc[short_entry, "trade_outcome"] = data.loc[short_entry, "sell_trade_outcome"]
+    return result
