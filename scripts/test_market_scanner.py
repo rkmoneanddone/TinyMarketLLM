@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
 
 from src.tiny_market_llm.scanner import ScannerConfig, TinyMarketScanner
 from scripts.evaluate_trade_setups import independent_events
+from src.tiny_market_llm.scanner.market_sections import high_breakout_history, independent_breakouts
 
 
 def sample(seed: int, rows: int = 500) -> pd.DataFrame:
@@ -162,6 +163,26 @@ class ScannerTests(unittest.TestCase):
         low, high = self.scanner._wilson_interval(4, 5)
         self.assertLess(low, 0.5)
         self.assertGreater(high, 0.5)
+
+    def test_high_breakout_excludes_current_candle_from_reference(self):
+        frame = sample(21, rows=300)
+        frame.loc[:298, "high"] = 100.0
+        frame.loc[:298, "close"] = 99.0
+        frame.loc[:298, "volume"] = 100.0
+        frame.loc[299, ["open", "high", "low", "close", "volume"]] = [100.0, 112.0, 99.0, 110.0, 200.0]
+        result = high_breakout_history(frame, "TCS")
+        latest = result.iloc[-1]
+        self.assertEqual(latest["prior_stored_high"], 100.0)
+        self.assertEqual(latest["status"], "CONFIRMED_10Y_HIGH_BREAKOUT")
+
+    def test_high_breakout_cooldown_removes_clusters(self):
+        events = pd.DataFrame({
+            "timestamp": pd.date_range("2026-01-01", periods=4, freq="D", tz="UTC"),
+            "symbol": ["TCS"] * 4,
+            "volume_confirmed": [True] * 4,
+        }, index=[10, 11, 15, 20])
+        result = independent_breakouts(events, cooldown_candles=5)
+        self.assertEqual(len(result), 3)
 
 
 if __name__ == "__main__":

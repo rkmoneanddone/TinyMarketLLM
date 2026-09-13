@@ -319,3 +319,11 @@ setups remain visible in research reports, but only approved setup names can
 reach BUY or SELL. The optional `compact` feature profile uses candle behaviour,
 EMA trend, RSI momentum, and relative volume; it is research-only unless unseen
 walk-forward tests outperform the configured `core` profile.
+
+## 10-year high-breakout section
+
+`python scripts\run_market_sections.py --section high-breakouts` creates an
+offline section and report from locally stored data. It identifies price-only
+and volume-confirmed stored-history breakouts, collapses clustered candles into
+independent events, and reports target-before-stop results. The output is
+deliberately labelled 10Y/stored-history high rather than lifetime ATH.
