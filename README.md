@@ -367,3 +367,11 @@ causal definitions: a bullish FVG is `low[t] > high[t-2]`; an order block is the
 last bearish candle within five bars before a 20-day-high breakout. A later
 bullish candle must touch and reclaim the stored zone within ten candles. Each
 setup is independently validated before it can produce BUY.
+
+## Morning Star at support section
+
+`python scripts\run_market_sections.py --section morning-star` detects a strong
+bearish candle, small middle body, and bullish recovery above the first candle's
+midpoint. Candle sizes are ATR-normalized and the three-candle low must test
+prior 20-candle support. The pattern cannot trade unless discovery and unseen
+target-before-stop results independently pass.

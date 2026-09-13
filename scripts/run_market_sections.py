@@ -21,6 +21,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     resample_ohlc,
     rsi_reversal_history,
     breakout_pullback_history,
+    morning_star_history,
 )
 
 
@@ -35,6 +36,7 @@ def main() -> None:
     parser.add_argument(
         "--section", choices=(
             "high-breakouts", "next-day", "swing", "ema-alignment", "rsi-reversal", "breakout-pullback",
+            "morning-star",
         ),
         default="high-breakouts",
     )
@@ -61,6 +63,9 @@ def main() -> None:
         return
     if args.section == "breakout-pullback":
         run_breakout_pullback_section(config, frames, scanner)
+        return
+    if args.section == "morning-star":
+        run_morning_star_section(config, frames, scanner)
         return
 
     histories = []
@@ -383,6 +388,47 @@ def run_breakout_pullback_section(config: dict, frames: dict[str, pd.DataFrame],
     }
     report = write_report(output, summary, config, "section_breakout_pullback")
     print(output.to_string(index=False))
+    print(f"\n[REPORT] {report}")
+
+
+def run_morning_star_section(config: dict, frames: dict[str, pd.DataFrame], scanner) -> None:
+    histories = []
+    latest = []
+    for symbol, frame in frames.items():
+        history = morning_star_history(scanner.prepare(frame), symbol)
+        histories.append(history)
+        latest.append(history.iloc[-1])
+    all_history = pd.concat(histories, ignore_index=True)
+    events = all_history[all_history["setup"] == "MORNING_STAR_AT_SUPPORT"]
+    cutoff = pd.Timestamp("2024-01-01", tz="UTC")
+    metric = {"setup": "MORNING_STAR_AT_SUPPORT"}
+    approved = True
+    for label, sample in (
+        ("discovery", events[events["timestamp"] < cutoff]),
+        ("unseen", events[events["timestamp"] >= cutoff]),
+    ):
+        resolved = sample[sample["trade_outcome"].isin(["TARGET", "STOP"])]
+        targets = int((resolved["trade_outcome"] == "TARGET").sum())
+        low, _ = scanner._wilson_interval(targets, len(resolved))
+        metric.update({
+            f"{label}_resolved": int(len(resolved)),
+            f"{label}_target_rate": targets / len(resolved) if len(resolved) else None,
+            f"{label}_ci_95_low": low,
+        })
+        approved &= len(resolved) >= 20 and low is not None and low > 3 / 7
+    metric["approved"] = approved
+    rows = pd.DataFrame(latest)[["timestamp", "symbol", "close", "prior_support", "pattern_low", "setup"]]
+    rows["decision"] = rows["setup"].apply(lambda setup: "BUY" if approved and setup == "MORNING_STAR_AT_SUPPORT" else "WAIT")
+    rows["reason"] = rows["decision"].apply(
+        lambda value: "Validated Morning Star at support" if value == "BUY" else "No new validated Morning Star at support"
+    )
+    summary = {
+        "section": "morning_star_at_support", "data_policy": "local_only_maximum_10_years",
+        "validation_cutoff": str(cutoff), "metric": metric,
+        "note": "Three-candle shape, ATR size, and prior support are all required.",
+    }
+    report = write_report(rows, summary, config, "section_morning_star")
+    print(rows.to_string(index=False))
     print(f"\n[REPORT] {report}")
 
 

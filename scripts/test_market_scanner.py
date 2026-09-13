@@ -23,6 +23,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     resample_ohlc,
     rsi_reversal_history,
     breakout_pullback_history,
+    morning_star_history,
 )
 
 
@@ -253,6 +254,17 @@ class ScannerTests(unittest.TestCase):
         self.assertIn("BREAKOUT_FVG_PULLBACK", set(result["setup"]))
         event = result[result["setup"] == "BREAKOUT_FVG_PULLBACK"].iloc[0]
         self.assertGreater(event["bar_index"], event["breakout_bar_index"])
+
+    def test_morning_star_requires_support_and_three_candle_shape(self):
+        frame = sample(51, rows=30)
+        frame[["open", "high", "low", "close"]] = [102.0, 103.0, 99.0, 101.0]
+        frame["atr_14_pct"] = 2.0
+        frame["buy_trade_outcome"] = "TARGET"
+        frame.loc[27, ["open", "high", "low", "close"]] = [102.0, 103.0, 98.0, 99.0]
+        frame.loc[28, ["open", "high", "low", "close"]] = [99.0, 100.0, 97.8, 98.8]
+        frame.loc[29, ["open", "high", "low", "close"]] = [99.0, 102.0, 98.5, 101.5]
+        result = morning_star_history(frame, "TCS")
+        self.assertEqual(result.iloc[-1]["setup"], "MORNING_STAR_AT_SUPPORT")
 
 
 if __name__ == "__main__":

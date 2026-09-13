@@ -251,3 +251,32 @@ def breakout_pullback_history(
         "timestamp", "symbol", "bar_index", "setup", "zone_low", "zone_high",
         "breakout_bar_index", "trade_outcome",
     ])
+
+
+def morning_star_history(prepared: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    """Detect an ATR-normalized Morning Star at prior 20-candle support."""
+    data = prepared.copy().reset_index(drop=True)
+    atr = data["atr_14_pct"] / 100 * data["close"]
+    first_body = data["open"].shift(2) - data["close"].shift(2)
+    middle_body = (data["close"].shift(1) - data["open"].shift(1)).abs()
+    third_body = data["close"] - data["open"]
+    first_midpoint = (data["open"].shift(2) + data["close"].shift(2)) / 2
+    pattern_low = pd.concat([data["low"].shift(2), data["low"].shift(1), data["low"]], axis=1).min(axis=1)
+    prior_support = data["low"].shift(3).rolling(20, min_periods=20).min()
+    pattern = (
+        (first_body >= 0.5 * atr.shift(2))
+        & (middle_body <= 0.35 * first_body)
+        & (third_body >= 0.4 * atr)
+        & (data["close"] > first_midpoint)
+        & (pattern_low <= prior_support + 0.25 * atr)
+    )
+    result = data[["timestamp", "close"]].copy()
+    result["symbol"] = symbol.upper()
+    result["setup"] = "NONE"
+    result.loc[pattern, "setup"] = "MORNING_STAR_AT_SUPPORT"
+    result["prior_support"] = prior_support
+    result["pattern_low"] = pattern_low
+    if "buy_trade_outcome" in data:
+        result["trade_outcome"] = "NO_SETUP"
+        result.loc[pattern, "trade_outcome"] = data.loc[pattern, "buy_trade_outcome"]
+    return result
