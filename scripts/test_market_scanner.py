@@ -20,6 +20,8 @@ from src.tiny_market_llm.scanner.market_sections import (
     next_day_setup_events,
     swing_setup_events,
     ema_alignment_history,
+    resample_ohlc,
+    rsi_reversal_history,
 )
 
 
@@ -223,6 +225,22 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue(latest["above_all_emas"])
         self.assertTrue(latest["bull_stack"])
         self.assertEqual(latest["setup"], "EMA_9_21_50_200_LONG")
+
+    def test_resample_ohlc_preserves_ohlcv_rules(self):
+        frame = sample(31, rows=10)
+        weekly = resample_ohlc(frame, "W-FRI")
+        self.assertEqual(set(weekly.columns), {"timestamp", "open", "high", "low", "close", "volume"})
+        self.assertLess(len(weekly), len(frame))
+        self.assertLess(weekly["timestamp"].max(), frame["timestamp"].max() + pd.Timedelta(days=7))
+
+    def test_rsi_reversal_requires_threshold_reclaim(self):
+        prepared = pd.DataFrame({
+            "timestamp": pd.date_range("2026-01-01", periods=3, freq="D", tz="UTC"),
+            "open": [100.0, 99.0, 99.0], "close": [99.0, 98.0, 101.0],
+            "rsi_14": [30.0, 24.0, 27.0],
+        })
+        result = rsi_reversal_history(prepared, "TCS", "DAILY")
+        self.assertEqual(result.iloc[-1]["setup"], "RSI_RECLAIM_25_LONG")
 
 
 if __name__ == "__main__":

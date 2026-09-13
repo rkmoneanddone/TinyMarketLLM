@@ -351,3 +351,11 @@ price is above or below all four EMAs and whether the averages form a proper
 bullish or bearish stack. A setup occurs only on a new candle transition through
 the complete stack and is trade-eligible only after discovery and unseen
 target-before-stop validation.
+
+## Daily/weekly/monthly RSI reversal section
+
+`python scripts\run_market_sections.py --section rsi-reversal` resamples stored
+daily OHLCV into completed weekly and monthly candles and evaluates RSI reversal
+separately for every timeframe. RSI below 25 or above 80 is informational; an
+entry requires a bullish reclaim of 25 or bearish rejection of 80 plus candle
+confirmation and successful discovery/unseen validation.

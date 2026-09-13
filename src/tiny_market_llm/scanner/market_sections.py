@@ -169,3 +169,36 @@ def ema_alignment_history(frame: pd.DataFrame, symbol: str) -> pd.DataFrame:
         result.loc[long_entry, "trade_outcome"] = data.loc[long_entry, "buy_trade_outcome"]
         result.loc[short_entry, "trade_outcome"] = data.loc[short_entry, "sell_trade_outcome"]
     return result
+
+
+def resample_ohlc(frame: pd.DataFrame, frequency: str) -> pd.DataFrame:
+    """Causally aggregate daily OHLCV, excluding the potentially open bucket."""
+    data = frame.copy().sort_values("timestamp").set_index("timestamp")
+    result = data.resample(frequency, label="right", closed="right").agg({
+        "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum",
+    }).dropna().reset_index()
+    return result.iloc[:-1].reset_index(drop=True)
+
+
+def rsi_reversal_history(prepared: pd.DataFrame, symbol: str, timeframe: str) -> pd.DataFrame:
+    """Detect confirmed RSI recovery from <25 or rejection from >80."""
+    required = {"timestamp", "open", "close", "rsi_14"}
+    missing = required - set(prepared.columns)
+    if missing:
+        raise ValueError(f"Missing RSI-reversal columns: {sorted(missing)}")
+    data = prepared.copy().reset_index(drop=True)
+    long_entry = (data["rsi_14"].shift(1) < 25) & (data["rsi_14"] >= 25) & (data["close"] > data["open"])
+    short_entry = (data["rsi_14"].shift(1) > 80) & (data["rsi_14"] <= 80) & (data["close"] < data["open"])
+    result = data[["timestamp", "close", "rsi_14"]].copy()
+    result["symbol"] = symbol.upper()
+    result["timeframe"] = timeframe
+    result["below_25"] = data["rsi_14"] < 25
+    result["above_80"] = data["rsi_14"] > 80
+    result["setup"] = "NONE"
+    result.loc[long_entry, "setup"] = "RSI_RECLAIM_25_LONG"
+    result.loc[short_entry, "setup"] = "RSI_REJECT_80_SHORT"
+    if "buy_trade_outcome" in data:
+        result["trade_outcome"] = "NO_SETUP"
+        result.loc[long_entry, "trade_outcome"] = data.loc[long_entry, "buy_trade_outcome"]
+        result.loc[short_entry, "trade_outcome"] = data.loc[short_entry, "sell_trade_outcome"]
+    return result

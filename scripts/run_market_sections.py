@@ -18,6 +18,8 @@ from src.tiny_market_llm.scanner.market_sections import (
     next_day_setup_events,
     swing_setup_events,
     ema_alignment_history,
+    resample_ohlc,
+    rsi_reversal_history,
 )
 
 
@@ -30,7 +32,7 @@ SWING_HORIZONS = {
 def main() -> None:
     parser = argparse.ArgumentParser(description="Offline TinyMarketLLM market sections")
     parser.add_argument(
-        "--section", choices=("high-breakouts", "next-day", "swing", "ema-alignment"),
+        "--section", choices=("high-breakouts", "next-day", "swing", "ema-alignment", "rsi-reversal"),
         default="high-breakouts",
     )
     parser.add_argument("--symbol", choices=("GRASIM", "RELIANCE", "TCS"))
@@ -50,6 +52,9 @@ def main() -> None:
         return
     if args.section == "ema-alignment":
         run_ema_alignment_section(config, frames, scanner)
+        return
+    if args.section == "rsi-reversal":
+        run_rsi_reversal_section(config, frames, scanner)
         return
 
     histories = []
@@ -259,6 +264,62 @@ def run_ema_alignment_section(config: dict, frames: dict[str, pd.DataFrame], sca
         "note": "Above/below-all status is informational; only a validated transition can trade.",
     }
     report = write_report(rows, summary, config, "section_ema_alignment")
+    print(rows.to_string(index=False))
+    print(f"\n[REPORT] {report}")
+
+
+def run_rsi_reversal_section(config: dict, frames: dict[str, pd.DataFrame], scanner) -> None:
+    histories = []
+    latest = []
+    for symbol, daily in frames.items():
+        timeframe_frames = {
+            "DAILY": daily,
+            "WEEKLY": resample_ohlc(daily, "W-FRI"),
+            "MONTHLY": resample_ohlc(daily, "ME"),
+        }
+        for timeframe, frame in timeframe_frames.items():
+            history = rsi_reversal_history(scanner.prepare(frame), symbol, timeframe)
+            histories.append(history)
+            latest.append(history.iloc[-1])
+    all_history = pd.concat(histories, ignore_index=True)
+    cutoff = pd.Timestamp("2024-01-01", tz="UTC")
+    metrics = []
+    approved = []
+    for (timeframe, setup_name), group in all_history[all_history["setup"] != "NONE"].groupby(["timeframe", "setup"]):
+        record = {"timeframe": timeframe, "setup": setup_name}
+        credible = True
+        for label, sample in (
+            ("discovery", group[group["timestamp"] < cutoff]),
+            ("unseen", group[group["timestamp"] >= cutoff]),
+        ):
+            resolved = sample[sample["trade_outcome"].isin(["TARGET", "STOP"])]
+            targets = int((resolved["trade_outcome"] == "TARGET").sum())
+            low, _ = scanner._wilson_interval(targets, len(resolved))
+            record.update({
+                f"{label}_resolved": int(len(resolved)),
+                f"{label}_target_rate": targets / len(resolved) if len(resolved) else None,
+                f"{label}_ci_95_low": low,
+            })
+            credible &= len(resolved) >= 20 and low is not None and low > 3 / 7
+        record["approved"] = credible
+        if credible:
+            approved.append((timeframe, setup_name))
+        metrics.append(record)
+    rows = pd.DataFrame(latest)[["timestamp", "symbol", "timeframe", "close", "rsi_14", "below_25", "above_80", "setup"]]
+    rows["decision"] = rows.apply(
+        lambda row: "BUY" if (row["timeframe"], row["setup"]) in approved and row["setup"].endswith("LONG")
+        else "SELL" if (row["timeframe"], row["setup"]) in approved else "WAIT", axis=1,
+    )
+    rows["reason"] = rows["decision"].apply(
+        lambda value: "Validated RSI reversal" if value != "WAIT" else "No new validated RSI reversal"
+    )
+    summary = {
+        "section": "multi_timeframe_rsi_reversal", "data_policy": "local_only_maximum_10_years",
+        "validation_cutoff": str(cutoff),
+        "approved": [f"{timeframe}:{setup}" for timeframe, setup in approved], "metrics": metrics,
+        "note": "Extreme RSI is status only; entry requires a confirmed threshold reclaim/rejection.",
+    }
+    report = write_report(rows, summary, config, "section_rsi_reversal")
     print(rows.to_string(index=False))
     print(f"\n[REPORT] {report}")
 
