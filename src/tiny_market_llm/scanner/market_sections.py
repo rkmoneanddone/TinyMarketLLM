@@ -475,6 +475,10 @@ def intraday_fvg_previous_high_records(
                 "ema_21_distance": float(data.loc[held, "ema_21_distance"]),
                 "ema_50_distance": float(data.loc[held, "ema_50_distance"]),
                 "ema_21_slope": float(data.loc[held, "ema_21_slope"]),
+                "price_change_3_pct": float(data.loc[held, "return_3"]),
+                "volume_change_3_pct": float(
+                    (data.loc[held, "volume"] / data.loc[held - 3, "volume"] - 1) * 100
+                ) if data.loc[held - 3, "volume"] > 0 else None,
                 "outcome": outcome, "exit_date": exit_date, "exit_price": exit_price,
                 "holding_candles": holding_candles,
                 "pnl_pct": ((exit_price / entry - 1) * 100) if exit_price is not None else None,
