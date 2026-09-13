@@ -380,6 +380,10 @@ def fvg_trade_records(
                 "symbol": symbol.upper(), "timeframe": timeframe.upper(), "fvg_date": data.loc[created, "timestamp"],
                 "signal_date": data.loc[held, "timestamp"], "buy_price": entry, "sell_target": target,
                 "stop_loss": stop, "reward_risk": (target - entry) / risk, "rsi_14": float(data.loc[held, "rsi_14"]),
+                "ema_21_distance": float(data.loc[held, "ema_21_distance"]),
+                "ema_50_distance": float(data.loc[held, "ema_50_distance"]),
+                "ema_21_slope": float(data.loc[held, "ema_21_slope"]),
+                "volume_ratio_20": float(data.loc[held, "volume_ratio_20"]),
                 "outcome": outcome, "exit_date": exit_date, "exit_price": exit_price,
                 "pnl_pct": ((exit_price / entry - 1) * 100) if exit_price is not None else None,
             })
