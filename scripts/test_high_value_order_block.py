@@ -4,6 +4,7 @@ import unittest
 import pandas as pd
 
 from src.tiny_market_llm.scanner.high_value_order_block import (
+    classify_bullish_retest,
     higher_timeframe_bullish_order_blocks,
     lower_timeframe_retest_trades,
 )
@@ -48,6 +49,21 @@ class HighValueOrderBlockTests(unittest.TestCase):
         lower.loc[11, ["open", "high", "low", "close"]] = [13, 14, 10, 12]
         trades = lower_timeframe_retest_trades(higher, lower, "TEST", "1D", "1H")
         self.assertTrue(trades.empty)
+
+    def test_descending_correction_is_classified(self):
+        frame = pd.DataFrame({
+            "open": [15, 14, 13, 12, 11], "high": [16, 15, 14, 13, 12],
+            "low": [14, 13, 12, 11, 9], "close": [14, 13, 12, 11, 10],
+        })
+        self.assertEqual(classify_bullish_retest(frame, 0, 4, 10), "DESCENDING_CONTINUATION")
+
+    def test_significant_low_sweep_has_priority(self):
+        frame = pd.DataFrame({
+            "open": [12, 11, 10, 11, 12, 11, 10], "high": [13, 12, 11, 12, 13, 12, 11],
+            "low": [11, 10, 8, 10, 11, 10, 7], "close": [11, 10, 10, 11, 12, 10, 9],
+        })
+        self.assertEqual(classify_bullish_retest(frame, 0, 6, 10),
+                         "SIGNIFICANT_LOW_LIQUIDITY_FAKEOUT")
 
 
 if __name__ == "__main__": unittest.main()
