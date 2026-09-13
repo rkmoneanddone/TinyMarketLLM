@@ -51,6 +51,7 @@ def scanner_from(config: dict, feature_set: str | None = None) -> TinyMarketScan
         minimum_resolved_trades=config["minimum_resolved_trades"],
         minimum_trade_symbols=config["minimum_trade_symbols"],
         feature_set=feature_set or config.get("feature_set", "core"),
+        eligible_setups=tuple(config.get("eligible_setups", ("BREAKOUT_VOLUME", "BREAKOUT_RETEST"))),
     ))
 
 
@@ -96,7 +97,7 @@ def main() -> None:
     parser.add_argument("--test-end", help="Optional final unseen-test date")
     parser.add_argument("--walk-forward", action="store_true", help="Retrain before each test day")
     parser.add_argument("--training-years", type=int, default=3, help="Rolling history for walk-forward training")
-    parser.add_argument("--feature-set", choices=("core", "chart"), help="Feature family to evaluate")
+    parser.add_argument("--feature-set", choices=("compact", "core", "chart"), help="Feature family to evaluate")
     args = parser.parse_args()
 
     config = load_configuration()

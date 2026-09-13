@@ -313,3 +313,9 @@ This fast evaluator does not retrain the model. It removes overlapping repeated
 signals using the five-candle trade window, reports expectancy before costs,
 and requires at least 20 resolved events across at least two stocks whose 95%
 target-rate lower bound exceeds the strategy breakeven rate.
+
+Trade eligibility is configuration-driven through `eligible_setups`. Candidate
+setups remain visible in research reports, but only approved setup names can
+reach BUY or SELL. The optional `compact` feature profile uses candle behaviour,
+EMA trend, RSI momentum, and relative volume; it is research-only unless unseen
+walk-forward tests outperform the configured `core` profile.

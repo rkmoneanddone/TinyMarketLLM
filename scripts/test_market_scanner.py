@@ -138,6 +138,18 @@ class ScannerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             TinyMarketScanner(ScannerConfig(feature_set="unknown"))
 
+    def test_compact_model_uses_small_signal_families(self):
+        compact = TinyMarketScanner(ScannerConfig(feature_set="compact"))
+        self.assertLess(len(compact.feature_columns), len(self.scanner.feature_columns))
+        self.assertNotIn("atr_14_pct", compact.feature_columns)
+        self.assertIn("rsi_14", compact.feature_columns)
+        self.assertIn("volume_ratio_20", compact.feature_columns)
+
+    def test_only_allowlisted_setups_are_trade_eligible(self):
+        scanner = TinyMarketScanner(ScannerConfig(eligible_setups=("BREAKOUT_VOLUME",)))
+        self.assertTrue(scanner._has_eligible_setup("EMA_BULL_CROSS|BREAKOUT_VOLUME"))
+        self.assertFalse(scanner._has_eligible_setup("EMA_BULL_CROSS"))
+
     def test_setup_cooldown_removes_overlapping_events(self):
         events = pd.DataFrame([
             {"symbol": "TCS", "setup_name": "EMA_BULL_PULLBACK", "bar_index": value}

@@ -20,6 +20,15 @@ CORE_FEATURE_COLUMNS = [
     "distance_low_20", "breakout_high_20", "breakdown_low_20",
 ]
 
+# Deliberately small model input: raw candle behaviour plus three technical
+# families (EMA trend, RSI momentum, and relative volume). ATR remains part of
+# trade sizing/outcome evaluation, but is not an additional prediction vote.
+COMPACT_FEATURE_COLUMNS = [
+    "return_1", "return_3", "return_5", "body_pct", "close_location",
+    "ema_21_distance", "ema_50_distance", "ema_21_slope",
+    "rsi_14", "rsi_change_3", "volume_ratio_20",
+]
+
 CHART_FEATURE_COLUMNS = CORE_FEATURE_COLUMNS + [
     "distance_high_60", "distance_low_60", "breakout_high_60",
     "breakdown_low_60", "range_compression_10_50",
@@ -43,6 +52,7 @@ class ScannerConfig:
     minimum_resolved_trades: int = 20
     minimum_trade_symbols: int = 2
     feature_set: str = "core"
+    eligible_setups: tuple[str, ...] = ("BREAKOUT_VOLUME", "BREAKOUT_RETEST")
 
 
 class TinyMarketScanner:
@@ -54,7 +64,11 @@ class TinyMarketScanner:
 
     def __init__(self, config: ScannerConfig | None = None):
         self.config = config or ScannerConfig()
-        feature_sets = {"core": CORE_FEATURE_COLUMNS, "chart": CHART_FEATURE_COLUMNS}
+        feature_sets = {
+            "compact": COMPACT_FEATURE_COLUMNS,
+            "core": CORE_FEATURE_COLUMNS,
+            "chart": CHART_FEATURE_COLUMNS,
+        }
         if self.config.feature_set not in feature_sets:
             raise ValueError(f"Unknown feature_set: {self.config.feature_set}")
         self.feature_columns = feature_sets[self.config.feature_set]
@@ -403,12 +417,14 @@ class TinyMarketScanner:
         out["horizon_votes"] = ["|".join(f"{h}:{vote}" for h, vote in zip(models, row)) for row in vote_matrix]
         evidence = rows.apply(self._evidence_direction, axis=1)
         out["evidence"] = evidence.values
+        eligible_setup = out["setup"].apply(self._has_eligible_setup)
         out["decision"] = "WAIT"
         qualified = (
             (out["confidence"] >= self.config.minimum_confidence)
             & (out["horizon_agreement"] >= self.config.minimum_horizon_agreement)
             & (out["prediction"] == out["evidence"])
             & (out["prediction"] == out["setup_direction"])
+            & eligible_setup
         )
         out.loc[qualified & (out["prediction"] == "UP"), "decision"] = "BUY"
         out.loc[qualified & (out["prediction"] == "DOWN"), "decision"] = "SELL"
@@ -671,6 +687,8 @@ class TinyMarketScanner:
             return "No recognised trade setup"
         if row["setup_direction"] == "CONFLICT":
             return "Conflicting trade setups"
+        if not self._has_eligible_setup(row["setup"]):
+            return "Setup is measured but not approved for trading"
         if row["prediction"] == "FLAT":
             return "FLAT is most probable"
         if row["confidence"] < self.config.minimum_confidence:
@@ -682,6 +700,9 @@ class TinyMarketScanner:
         if row["prediction"] != row["setup_direction"]:
             return "Model direction does not confirm the detected setup"
         return "Setup, probability, horizon agreement, and technical evidence passed"
+
+    def _has_eligible_setup(self, setup: str) -> bool:
+        return bool(set(setup.split("|")) & set(self.config.eligible_setups))
 
     @staticmethod
     def _wilson_interval(successes: int, observations: int) -> tuple[float | None, float | None]:
