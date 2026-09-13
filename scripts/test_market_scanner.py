@@ -18,6 +18,7 @@ from src.tiny_market_llm.scanner.market_sections import (
     high_breakout_history,
     independent_breakouts,
     next_day_setup_events,
+    swing_setup_events,
 )
 
 
@@ -197,6 +198,18 @@ class ScannerTests(unittest.TestCase):
         result = next_day_setup_events(prepared, "TCS", ("BREAKOUT_RETEST",), cooldown_candles=2)
         self.assertEqual(len(result), 2)
         self.assertEqual(result["success_after_cost_buffer"].tolist(), [True, False])
+
+    def test_swing_events_are_independent_per_horizon(self):
+        prepared = pd.DataFrame({
+            "timestamp": pd.date_range("2025-01-01", periods=20, freq="D", tz="UTC"),
+            "close": range(100, 120),
+            "setup": ["BREAKOUT_RETEST"] * 20,
+        })
+        result = swing_setup_events(
+            prepared, "TCS", ("BREAKOUT_RETEST",), {"1_WEEK": 5},
+        )
+        self.assertEqual(result["bar_index"].tolist(), [0, 5, 10])
+        self.assertTrue(result["success_after_cost_buffer"].all())
 
 
 if __name__ == "__main__":

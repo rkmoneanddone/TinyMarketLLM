@@ -335,3 +335,11 @@ setups specifically against the following daily candle with a 0.1% cost/slippage
 buffer. A setup must have at least 20 independent events and a 95% success-rate
 lower bound above 50% in both the pre-2024 discovery period and the unseen
 2024+ period. Otherwise every stock is explicitly reported as WAIT.
+
+## Swing trade section
+
+`python scripts\run_market_sections.py --section swing` evaluates 1/2/3-week
+and 1/2/3-month horizons independently from daily candles. Events cannot overlap
+within their own horizon. Promotion requires at least 20 events, positive mean
+return after a 0.2% buffer, and a 95% success-rate lower bound above 50% in both
+the discovery and unseen periods; otherwise the horizon reports WAIT.

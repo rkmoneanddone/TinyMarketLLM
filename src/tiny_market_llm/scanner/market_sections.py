@@ -102,3 +102,37 @@ def next_day_setup_events(
                 kept.append(row._asdict())
                 last_bar = row.bar_index
     return pd.DataFrame(kept, columns=events.columns)
+
+
+def swing_setup_events(
+    prepared: pd.DataFrame,
+    symbol: str,
+    setup_names: tuple[str, ...],
+    horizons: dict[str, int],
+    minimum_net_move_pct: float = 0.2,
+) -> pd.DataFrame:
+    """Create non-overlapping forward-return events for daily swing horizons."""
+    data = prepared.reset_index(drop=True).copy()
+    records = []
+    for setup_name in setup_names:
+        setup_mask = data["setup"].str.split("|").apply(lambda names: setup_name in names)
+        for horizon_name, candles in horizons.items():
+            future_move = (data["close"].shift(-candles) / data["close"] - 1) * 100
+            candidates = data.index[setup_mask & future_move.notna()]
+            last_bar = -10**9
+            for bar_index in candidates:
+                if bar_index - last_bar < candles:
+                    continue
+                move = float(future_move.loc[bar_index])
+                records.append({
+                    "timestamp": data.loc[bar_index, "timestamp"],
+                    "symbol": symbol.upper(),
+                    "bar_index": int(bar_index),
+                    "setup_name": setup_name,
+                    "horizon": horizon_name,
+                    "horizon_candles": candles,
+                    "future_move_pct": move,
+                    "success_after_cost_buffer": move > minimum_net_move_pct,
+                })
+                last_bar = bar_index
+    return pd.DataFrame(records)

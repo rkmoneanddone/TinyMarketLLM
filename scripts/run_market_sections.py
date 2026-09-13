@@ -16,12 +16,19 @@ from src.tiny_market_llm.scanner.market_sections import (
     high_breakout_history,
     independent_breakouts,
     next_day_setup_events,
+    swing_setup_events,
 )
+
+
+SWING_HORIZONS = {
+    "1_WEEK": 5, "2_WEEKS": 10, "3_WEEKS": 15,
+    "1_MONTH": 21, "2_MONTHS": 42, "3_MONTHS": 63,
+}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Offline TinyMarketLLM market sections")
-    parser.add_argument("--section", choices=("high-breakouts", "next-day"), default="high-breakouts")
+    parser.add_argument("--section", choices=("high-breakouts", "next-day", "swing"), default="high-breakouts")
     parser.add_argument("--symbol", choices=("GRASIM", "RELIANCE", "TCS"))
     args = parser.parse_args()
 
@@ -33,6 +40,9 @@ def main() -> None:
 
     if args.section == "next-day":
         run_next_day_section(config, frames, scanner)
+        return
+    if args.section == "swing":
+        run_swing_section(config, frames, scanner)
         return
 
     histories = []
@@ -131,6 +141,69 @@ def run_next_day_section(config: dict, frames: dict[str, pd.DataFrame], scanner)
     }
     report = write_report(latest_rows, summary, config, "section_next_day_trade")
     print(latest_rows.to_string(index=False))
+    print(f"\n[REPORT] {report}")
+
+
+def run_swing_section(config: dict, frames: dict[str, pd.DataFrame], scanner) -> None:
+    events = []
+    latest_setups = {}
+    latest_timestamp = None
+    for symbol, frame in frames.items():
+        prepared = scanner.prepare(frame)
+        events.append(swing_setup_events(
+            prepared, symbol, scanner.config.eligible_setups, SWING_HORIZONS,
+        ))
+        latest_setups[symbol] = str(prepared.iloc[-1]["setup"])
+        latest_timestamp = prepared.iloc[-1]["timestamp"]
+    all_events = pd.concat(events, ignore_index=True)
+    cutoff = pd.Timestamp("2024-01-01", tz="UTC")
+    metrics = []
+    approved: set[tuple[str, str]] = set()
+    for (setup_name, horizon), group in all_events.groupby(["setup_name", "horizon"]):
+        record = {"setup_name": setup_name, "horizon": horizon}
+        credible = True
+        for label, sample in (
+            ("discovery", group[group["timestamp"] < cutoff]),
+            ("unseen", group[group["timestamp"] >= cutoff]),
+        ):
+            wins = int(sample["success_after_cost_buffer"].sum())
+            low, _ = scanner._wilson_interval(wins, len(sample))
+            mean_move = float(sample["future_move_pct"].mean()) if len(sample) else None
+            record.update({
+                f"{label}_events": int(len(sample)),
+                f"{label}_success_rate": wins / len(sample) if len(sample) else None,
+                f"{label}_ci_95_low": low,
+                f"{label}_average_move_pct": mean_move,
+            })
+            credible &= len(sample) >= 20 and low is not None and low > 0.5 and mean_move is not None and mean_move > 0
+        record["approved"] = credible
+        if credible:
+            approved.add((setup_name, horizon))
+        metrics.append(record)
+
+    rows = []
+    for symbol, setup_value in latest_setups.items():
+        present = set(setup_value.split("|"))
+        for horizon in SWING_HORIZONS:
+            matched = sorted(name for name in present if (name, horizon) in approved)
+            rows.append({
+                "timestamp": latest_timestamp, "symbol": symbol, "timeframe": horizon,
+                "setup": setup_value, "decision": "BUY" if matched else "WAIT",
+                "validated_setup": "|".join(matched) if matched else "NONE",
+                "reason": "Validated swing setup" if matched else "No setup passes discovery and unseen validation",
+            })
+    output = pd.DataFrame(rows)
+    summary = {
+        "section": "swing_trade",
+        "data_policy": "local_only_maximum_10_years",
+        "horizons": SWING_HORIZONS,
+        "cost_buffer_pct": 0.2,
+        "validation_cutoff": str(cutoff),
+        "approved_setup_horizons": [f"{setup}:{horizon}" for setup, horizon in sorted(approved)],
+        "metrics": metrics,
+    }
+    report = write_report(output, summary, config, "section_swing_trade")
+    print(output.to_string(index=False))
     print(f"\n[REPORT] {report}")
 
 
