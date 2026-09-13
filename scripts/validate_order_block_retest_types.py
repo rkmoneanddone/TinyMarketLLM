@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime, timezone
@@ -14,7 +15,7 @@ if str(ROOT) not in sys.path:
 from src.tiny_market_llm.scanner.high_value_order_block import lower_timeframe_retest_trades
 from src.tiny_market_llm.scanner.market_sections import resample_ohlc
 
-SYMBOLS = ("GRASIM", "TCS", "RELIANCE", "TBZ")
+DEFAULT_SYMBOLS = ("GRASIM", "TCS", "RELIANCE", "TBZ")
 TYPES = ("DESCENDING_CONTINUATION", "CONSOLIDATION_LIQUIDITY_FAKEOUT",
          "SIGNIFICANT_LOW_LIQUIDITY_FAKEOUT")
 UNSEEN_START = pd.Timestamp("2024-01-01", tz="UTC")
@@ -35,8 +36,12 @@ def summary(rows: pd.DataFrame, symbol: str, mapping: str, period: str, kind: st
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Validate three higher-TF bullish Order Block retest types.")
+    parser.add_argument("--symbols", nargs="+", default=list(DEFAULT_SYMBOLS))
+    args = parser.parse_args()
+    symbols = tuple(symbol.strip().upper() for symbol in args.symbols)
     ledgers = []
-    for symbol in SYMBOLS:
+    for symbol in symbols:
         daily_path = ROOT / "data" / "market" / symbol / "1D" / "ohlc.parquet"
         if not daily_path.exists():
             raise FileNotFoundError(f"Missing {daily_path}")
@@ -52,7 +57,7 @@ def main() -> None:
             if len(result): ledgers.append(result)
     ledger = pd.concat(ledgers, ignore_index=True, sort=False) if ledgers else pd.DataFrame()
     rows = []
-    for symbol in SYMBOLS:
+    for symbol in symbols:
         for mapping in ("1W->1D", "1D->1H"):
             high, low = mapping.split("->")
             stock = ledger[(ledger["symbol"] == symbol) & (ledger["higher_timeframe"] == high)
@@ -64,9 +69,10 @@ def main() -> None:
                     rows.append(summary(period_rows, symbol, mapping, period, kind))
     results = pd.DataFrame(rows)
     output = ROOT / "data" / "research"; output.mkdir(parents=True, exist_ok=True)
-    ledger.to_csv(output / "order_block_retest_type_trades.csv", index=False)
-    results.to_csv(output / "order_block_retest_type_validation.csv", index=False)
-    record = output / "order_block_retest_type_validation.json"
+    suffix = "" if symbols == DEFAULT_SYMBOLS else "_" + "_".join(symbols)
+    ledger.to_csv(output / f"order_block_retest_type_trades{suffix}.csv", index=False)
+    results.to_csv(output / f"order_block_retest_type_validation{suffix}.csv", index=False)
+    record = output / f"order_block_retest_type_validation{suffix}.json"
     record.write_text(json.dumps({"generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "retest_types": TYPES, "results": results.to_dict("records"),
         "trades": ledger.to_dict("records")}, indent=2, default=str), encoding="utf-8")
