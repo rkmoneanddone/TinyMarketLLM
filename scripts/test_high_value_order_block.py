@@ -31,14 +31,23 @@ class HighValueOrderBlockTests(unittest.TestCase):
 
     def test_lower_timeframe_return_trades_c_to_b(self):
         higher = self.fixture()
+        higher.loc[11, ["open", "high", "low", "close"]] = [13, 14, 10, 12]
         lower = higher.copy()
-        lower.loc[11, ["open", "high", "low", "close"]] = [13, 14, 10, 12]
         lower.loc[12, ["open", "high", "low", "close"]] = [12, 15, 11, 15]
         trades = lower_timeframe_retest_trades(higher, lower, "TEST", "1D", "1H")
         self.assertEqual(len(trades), 1)
         self.assertEqual(trades.iloc[0]["entry_price"], 10)
         self.assertEqual(trades.iloc[0]["target_price"], 15)
+        self.assertEqual(trades.iloc[0]["higher_return_date"], pd.Timestamp("2025-01-12", tz="UTC"))
         self.assertEqual(trades.iloc[0]["outcome"], "TARGET")
+
+    def test_lower_touch_without_higher_timeframe_return_is_ignored(self):
+        higher = self.fixture()
+        higher.loc[11:, ["open", "high", "low", "close"]] = [16, 17, 16, 17]
+        lower = self.fixture()
+        lower.loc[11, ["open", "high", "low", "close"]] = [13, 14, 10, 12]
+        trades = lower_timeframe_retest_trades(higher, lower, "TEST", "1D", "1H")
+        self.assertTrue(trades.empty)
 
 
 if __name__ == "__main__": unittest.main()
