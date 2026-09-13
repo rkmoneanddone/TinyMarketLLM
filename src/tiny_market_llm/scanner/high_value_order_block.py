@@ -13,6 +13,56 @@ def _swing_highs(data: pd.DataFrame) -> pd.Series:
     ).fillna(False)
 
 
+def _swing_lows(data: pd.DataFrame) -> pd.Series:
+    """Five-candle swing lows; a swing at i is known only at i+2."""
+    return (
+        (data["low"] < data["low"].shift(1))
+        & (data["low"] < data["low"].shift(2))
+        & (data["low"] <= data["low"].shift(-1))
+        & (data["low"] <= data["low"].shift(-2))
+    ).fillna(False)
+
+
+def classify_bullish_retest(higher: pd.DataFrame, start_index: int,
+                            return_index: int, impulse_size: float) -> str:
+    """Classify only the three bullish C-retest shapes shown in the reference."""
+    data = higher.reset_index(drop=True)
+    before = data.iloc[start_index:return_index]
+    if len(before) < 3 or impulse_size <= 0:
+        return "OTHER"
+
+    # Significant-low fake-out: the return takes a swing low that was already
+    # confirmed before the return candle began.
+    swing_lows = _swing_lows(data)
+    confirmed_end = return_index - 2
+    candidates = data.index[start_index:confirmed_end + 1][
+        swing_lows.iloc[start_index:confirmed_end + 1]
+    ] if confirmed_end >= start_index else []
+    if len(candidates) and data.at[return_index, "low"] < data.at[int(candidates[-1]), "low"]:
+        return "SIGNIFICANT_LOW_LIQUIDITY_FAKEOUT"
+
+    recent = before.tail(8)
+    directions = (recent["close"] > recent["open"]).astype(int)
+    direction_changes = int((directions != directions.shift(1)).sum() - 1)
+    range_width = float(recent["high"].max() - recent["low"].min())
+    consolidation_low = float(recent["low"].min())
+    if (len(recent) >= 4 and range_width <= 0.35 * impulse_size
+            and direction_changes >= 2
+            and data.at[return_index, "low"] < consolidation_low):
+        return "CONSOLIDATION_LIQUIDITY_FAKEOUT"
+
+    # Continuation correction: both halves of the correction make lower price
+    # territory before the return reaches C.
+    if len(recent) >= 4:
+        midpoint = len(recent) // 2
+        first, second = recent.iloc[:midpoint], recent.iloc[midpoint:]
+        descending = (second["high"].mean() < first["high"].mean()
+                      and second["low"].mean() < first["low"].mean())
+        if descending:
+            return "DESCENDING_CONTINUATION"
+    return "OTHER"
+
+
 def higher_timeframe_bullish_order_blocks(higher: pd.DataFrame) -> pd.DataFrame:
     """Return causal A-break-C-B structures from completed higher-TF candles.
 
@@ -66,7 +116,8 @@ def higher_timeframe_bullish_order_blocks(higher: pd.DataFrame) -> pd.DataFrame:
 
 def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
                                   symbol: str, higher_timeframe: str,
-                                  lower_timeframe: str) -> pd.DataFrame:
+                                  lower_timeframe: str,
+                                  required_retest_types: tuple[str, ...] | None = None) -> pd.DataFrame:
     """Require the higher TF to return to C, then execute C-to-B on the lower TF."""
     structures = higher_timeframe_bullish_order_blocks(higher)
     if structures.empty:
@@ -89,6 +140,15 @@ def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
                 and higher_data.at[return_index, "high"] >= stop
             )
             if not higher_touched:
+                continue
+            confirmed_index = int(higher_data.index[
+                higher_data["timestamp"] == structure["tradable_from"]
+            ][0])
+            retest_type = classify_bullish_retest(
+                higher_data, confirmed_index + 1, return_index,
+                float(structure["b_price"] - structure["zone_high"]),
+            )
+            if required_retest_types is not None and retest_type not in required_retest_types:
                 continue
             interval_start = higher_data.at[return_index - 1, "timestamp"]
             interval_end = higher_data.at[return_index, "timestamp"]
@@ -119,6 +179,7 @@ def lower_timeframe_retest_trades(higher: pd.DataFrame, lower: pd.DataFrame,
                 "symbol": symbol.upper(), "higher_timeframe": higher_timeframe,
                 "lower_timeframe": lower_timeframe, **structure,
                 "higher_return_date": higher_data.at[return_index, "timestamp"],
+                "retest_type": retest_type,
                 "signal_date": data.at[signal, "timestamp"], "entry_price": entry,
                 "target_price": target, "stop_loss": stop,
                 "reward_risk": (target - entry) / (entry - stop),
