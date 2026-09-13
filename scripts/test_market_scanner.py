@@ -14,7 +14,11 @@ if str(ROOT) not in sys.path:
 
 from src.tiny_market_llm.scanner import ScannerConfig, TinyMarketScanner
 from scripts.evaluate_trade_setups import independent_events
-from src.tiny_market_llm.scanner.market_sections import high_breakout_history, independent_breakouts
+from src.tiny_market_llm.scanner.market_sections import (
+    high_breakout_history,
+    independent_breakouts,
+    next_day_setup_events,
+)
 
 
 def sample(seed: int, rows: int = 500) -> pd.DataFrame:
@@ -183,6 +187,16 @@ class ScannerTests(unittest.TestCase):
         }, index=[10, 11, 15, 20])
         result = independent_breakouts(events, cooldown_candles=5)
         self.assertEqual(len(result), 3)
+
+    def test_next_day_events_use_only_named_independent_setups(self):
+        prepared = pd.DataFrame({
+            "timestamp": pd.date_range("2026-01-01", periods=4, freq="D", tz="UTC"),
+            "setup": ["BREAKOUT_RETEST", "BREAKOUT_RETEST", "EMA_BULL_CROSS", "BREAKOUT_RETEST"],
+            "future_move_1_pct": [0.2, -0.3, 2.0, 0.05],
+        })
+        result = next_day_setup_events(prepared, "TCS", ("BREAKOUT_RETEST",), cooldown_candles=2)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["success_after_cost_buffer"].tolist(), [True, False])
 
 
 if __name__ == "__main__":

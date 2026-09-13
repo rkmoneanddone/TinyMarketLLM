@@ -327,3 +327,11 @@ offline section and report from locally stored data. It identifies price-only
 and volume-confirmed stored-history breakouts, collapses clustered candles into
 independent events, and reports target-before-stop results. The output is
 deliberately labelled 10Y/stored-history high rather than lifetime ATH.
+
+## Next-day trade section
+
+`python scripts\run_market_sections.py --section next-day` evaluates approved
+setups specifically against the following daily candle with a 0.1% cost/slippage
+buffer. A setup must have at least 20 independent events and a 95% success-rate
+lower bound above 50% in both the pre-2024 discovery period and the unseen
+2024+ period. Otherwise every stock is explicitly reported as WAIT.

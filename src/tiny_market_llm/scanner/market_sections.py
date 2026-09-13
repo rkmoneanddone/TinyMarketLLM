@@ -65,3 +65,40 @@ def independent_breakouts(events: pd.DataFrame, cooldown_candles: int) -> pd.Dat
     if not kept:
         return events.iloc[0:0].copy()
     return pd.DataFrame(kept).drop(columns=["Index"], errors="ignore")
+
+
+def next_day_setup_events(
+    prepared: pd.DataFrame,
+    symbol: str,
+    setup_names: tuple[str, ...],
+    cooldown_candles: int = 5,
+    minimum_net_move_pct: float = 0.1,
+) -> pd.DataFrame:
+    """Build independent next-session outcomes for explicitly named setups."""
+    records = []
+    for row in prepared.reset_index(drop=True).itertuples():
+        present = set(str(row.setup).split("|"))
+        for setup_name in setup_names:
+            if setup_name in present and pd.notna(row.future_move_1_pct):
+                records.append({
+                    "timestamp": row.timestamp,
+                    "symbol": symbol.upper(),
+                    "bar_index": row.Index,
+                    "setup_name": setup_name,
+                    "future_move_1_pct": row.future_move_1_pct,
+                    "success_after_cost_buffer": bool(row.future_move_1_pct > minimum_net_move_pct),
+                })
+    if not records:
+        return pd.DataFrame(columns=[
+            "timestamp", "symbol", "bar_index", "setup_name",
+            "future_move_1_pct", "success_after_cost_buffer",
+        ])
+    events = pd.DataFrame(records)
+    kept = []
+    for (_, _), group in events.groupby(["symbol", "setup_name"]):
+        last_bar = -10**9
+        for row in group.sort_values("bar_index").itertuples(index=False):
+            if row.bar_index - last_bar >= cooldown_candles:
+                kept.append(row._asdict())
+                last_bar = row.bar_index
+    return pd.DataFrame(kept, columns=events.columns)
