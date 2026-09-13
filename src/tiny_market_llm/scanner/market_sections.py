@@ -396,3 +396,93 @@ def fvg_trade_records(
 def daily_fvg_trade_records(prepared: pd.DataFrame, symbol: str, start: pd.Timestamp) -> pd.DataFrame:
     """Backward-compatible daily FVG paper-trade entry point."""
     return fvg_trade_records(prepared, symbol, start, timeframe="1D")
+
+
+def intraday_fvg_previous_high_records(
+    prepared: pd.DataFrame,
+    symbol: str,
+    start: pd.Timestamp,
+    *,
+    timeframe: str = "1H",
+    maximum_wait_candles: int = 12,
+) -> pd.DataFrame:
+    """FVG-hold trades targeting the nearest confirmed prior swing high."""
+    data = prepared.copy().reset_index(drop=True)
+    atr = data["atr_14_pct"] / 100 * data["close"]
+    fvg = (
+        (data["low"] > data["high"].shift(2))
+        & (data["close"] > data["open"])
+        & ((data["close"] - data["open"]) >= 0.4 * atr)
+    )
+    swing_high = (
+        (data["high"] > data["high"].shift(1))
+        & (data["high"] > data["high"].shift(2))
+        & (data["high"] >= data["high"].shift(-1))
+        & (data["high"] >= data["high"].shift(-2))
+    )
+    records = []
+    for created in data.index[fvg.fillna(False)]:
+        zone_low = float(data.loc[created - 2, "high"])
+        zone_high = float(data.loc[created, "low"])
+        for held in range(created + 1, min(created + maximum_wait_candles + 1, len(data))):
+            holds = (
+                data.loc[held, "low"] <= zone_high + 0.25 * atr.loc[held]
+                and data.loc[held, "close"] >= zone_high
+                and data.loc[held, "close"] >= data.loc[held, "open"]
+            )
+            rising_rsi = (
+                data.loc[held, "rsi_14"] > data.loc[held - 1, "rsi_14"]
+                and data.loc[held, "rsi_change_3"] > 0
+            )
+            if not (holds and rising_rsi):
+                continue
+            if data.loc[held, "timestamp"] < start:
+                break
+            entry = float(data.loc[held, "close"])
+            known = data.loc[: held - 2]
+            candidates = known.index[
+                swing_high.loc[: held - 2].fillna(False) & (known["high"] > entry)
+            ]
+            if len(candidates) == 0:
+                break
+            previous_high_index = int(candidates[-1])
+            target = float(data.loc[previous_high_index, "high"])
+            stop = float(min(zone_low, data.loc[held, "low"]) - 0.25 * atr.loc[held])
+            risk = entry - stop
+            if risk <= 0 or target <= entry:
+                break
+
+            outcome, exit_date, exit_price, holding_candles = "OPEN", None, None, None
+            for exited in range(held + 1, len(data)):
+                target_hit = data.loc[exited, "high"] >= target
+                stop_hit = data.loc[exited, "low"] <= stop
+                if target_hit and stop_hit:
+                    outcome, exit_date, holding_candles = "AMBIGUOUS", data.loc[exited, "timestamp"], exited - held
+                    break
+                if target_hit:
+                    outcome, exit_date, exit_price, holding_candles = "TARGET", data.loc[exited, "timestamp"], target, exited - held
+                    break
+                if stop_hit:
+                    outcome, exit_date, exit_price, holding_candles = "STOP", data.loc[exited, "timestamp"], stop, exited - held
+                    break
+
+            records.append({
+                "symbol": symbol.upper(), "timeframe": timeframe.upper(),
+                "fvg_date": data.loc[created, "timestamp"], "signal_date": data.loc[held, "timestamp"],
+                "previous_high_date": data.loc[previous_high_index, "timestamp"],
+                "buy_price": entry, "sell_target": target, "stop_loss": stop,
+                "reward_risk": (target - entry) / risk, "rsi_14": float(data.loc[held, "rsi_14"]),
+                "ema_21_distance": float(data.loc[held, "ema_21_distance"]),
+                "ema_50_distance": float(data.loc[held, "ema_50_distance"]),
+                "ema_21_slope": float(data.loc[held, "ema_21_slope"]),
+                "outcome": outcome, "exit_date": exit_date, "exit_price": exit_price,
+                "holding_candles": holding_candles,
+                "pnl_pct": ((exit_price / entry - 1) * 100) if exit_price is not None else None,
+            })
+            break
+    if not records:
+        return pd.DataFrame()
+    return (
+        pd.DataFrame(records).sort_values("fvg_date", ascending=False)
+        .drop_duplicates(["symbol", "signal_date"]).sort_values("signal_date").reset_index(drop=True)
+    )
