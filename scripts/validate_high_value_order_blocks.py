@@ -71,7 +71,7 @@ def main() -> None:
     result_frame.to_csv(output / "high_value_order_block_validation.csv", index=False)
     record = output / "high_value_order_block_validation.json"
     record.write_text(json.dumps({"generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "definition": "HTF A break -> last bearish candle C -> confirmed new high B -> LTF return to C -> target B",
+        "definition": "HTF A break -> last bearish candle C -> confirmed new high B -> HTF return to C -> LTF execution targeting B",
         "results": result_frame.to_dict("records"), "trades": ledger.to_dict("records")},
         indent=2, default=str), encoding="utf-8")
     print(result_frame.to_string(index=False))
