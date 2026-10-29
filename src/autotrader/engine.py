@@ -50,7 +50,8 @@ class AutoTrader:
         if not self.journal:return
         self.journal.parent.mkdir(parents=True,exist_ok=True)
         data=dict(capital=str(self.capital),cash=str(self.cash),positions=self.positions,trades=self.trades,
-                  entries=self.entries,day=self.day,daily_pnl=str(self.daily_pnl),halted=self.halted,\n                  halt_reason=self.halt_reason)
+                  entries=self.entries,day=self.day,daily_pnl=str(self.daily_pnl),halted=self.halted,
+                  halt_reason=self.halt_reason)
         tmp=self.journal.with_suffix(".tmp")
         with tmp.open("w",encoding="utf8") as f:
             json.dump(data,f,indent=2)
@@ -69,7 +70,8 @@ class AutoTrader:
         self.entries=int(data["entries"])
         self.day=data["day"]
         self.daily_pnl=D(data["daily_pnl"])
-        self.halted=bool(data["halted"])\n        self.halt_reason=data.get("halt_reason")
+        self.halted=bool(data["halted"])
+        self.halt_reason=data.get("halt_reason")
         self._roll()
 
     def buy(self,symbol,price,stop):
@@ -102,10 +104,22 @@ class AutoTrader:
         self.trades.append(trade)
         self.daily_pnl+=pnl
         del self.positions[symbol]
+        if self.daily_pnl <= D("-200"):
+            self.halted = True
+            self.halt_reason = "DAILY_LOSS_LIMIT"
+        if self.cash <= 0 and not self.positions:
+            self.halted = True
+            self.halt_reason = "CAPITAL_EXHAUSTED"
         self._save()
         return trade
 
-    def halt(self,reason="MANUAL_KILL_SWITCH"):\n        """Persistently disable new BUYs; protective SELLs remain permitted."""\n        self.halted=True\n        self.halt_reason=reason\n        self._save()\n\n    def on_quote(self,symbol,price,volume=None,oi=None):
+    def halt(self,reason="MANUAL_KILL_SWITCH"):
+        """Persistently disable new BUYs; protective SELLs remain permitted."""
+        self.halted=True
+        self.halt_reason=reason
+        self._save()
+
+    def on_quote(self,symbol,price,volume=None,oi=None):
         """Quote -> protective exit -> optional 3/5 SMA demo entry.
         Demo SMA is NOT a validated strategy. No breakout/retest implementation.
         """
@@ -141,7 +155,8 @@ class AutoTrader:
                     win_rate=str(D(wins)*100/len(trades) if trades else D(0)),
                     realized_pnl=str(sum((D(t["pnl"]) for t in trades),D(0))),
                     unrealized_pnl=str(unrealized),cash=str(self.cash),
-                    open_positions=len(self.positions),entries_today=self.entries,\n                    halted=self.halted,halt_reason=self.halt_reason,
+                    open_positions=len(self.positions),entries_today=self.entries,
+                    halted=self.halted,halt_reason=self.halt_reason,
                     learning_records=[dict(symbol=t["symbol"],reason=t["reason"],
                       outcome="WIN" if D(t["pnl"])>0 else "LOSS" if D(t["pnl"])<0 else "FLAT")
                       for t in trades])
