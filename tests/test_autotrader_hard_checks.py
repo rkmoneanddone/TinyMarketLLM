@@ -51,6 +51,12 @@ class HardChecksTests(unittest.TestCase):
             reject_cash_transfer()
     def test_halt(self):
         self.blocked(order(),state(trading_enabled=False))
+    def test_stop_loss_exit_blocks_buy_but_allows_exit(self):
+        self.blocked(order(), state(stop_loss_exit_pending=True))
+        validate_order(order("SELL"), state(stop_loss_exit_pending=True, confirmed_positions={"SBIN":1}))
+    def test_daily_loss_halt_blocks_buy_but_allows_exit(self):
+        self.blocked(order(), state(daily_loss_limit_reached=True))
+        validate_order(order("SELL"), state(daily_loss_limit_reached=True, confirmed_positions={"SBIN":1}))
     def test_valid_buy(self):
         validate_order(order(),state())
 
