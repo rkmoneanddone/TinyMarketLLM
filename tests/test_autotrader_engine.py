@@ -38,6 +38,17 @@ class EndToEndTests(unittest.TestCase):
             e.sell("SBIN",100)
         with self.assertRaises(HardCheckRejected):e.buy("SBIN",100,99)
 
+    def test_kill_switch_persists_and_allows_exit(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"ledger.json"
+            e=AutoTrader(journal=path)
+            e.buy("SBIN",800,790)
+            e.halt()
+            restored=AutoTrader(journal=path)
+            self.assertTrue(restored.halted)
+            with self.assertRaises(HardCheckRejected):restored.buy("BEL",100,99)
+            self.assertEqual(restored.on_quote("SBIN",790)["reason"],"STOP_LOSS")
+
     def test_daily_loss_halt(self):
         e=AutoTrader()
         for _ in range(3):
