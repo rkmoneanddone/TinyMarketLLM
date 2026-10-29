@@ -140,6 +140,29 @@ class AutoTrader:
                 errors[symbol]=str(exc)
         return dict(closed=closed,errors=errors,remaining=list(self.positions))
 
+    def start(self):
+        """Resume only an operator STOP; never override risk/emergency halts."""
+        self._roll()
+        if not self.halted:
+            return "ALREADY_RUNNING"
+        if self.halt_reason != "OPERATOR_STOP":
+            raise HardCheckRejected("Risk or emergency halt cannot be reset by START")
+        if self.positions:
+            raise HardCheckRejected("Cannot START while positions remain open")
+        if self.daily_pnl <= D("-200"):
+            raise HardCheckRejected("Daily loss limit reached")
+        self.halted=False
+        self.halt_reason=None
+        self._save()
+        return "STARTED"
+
+    def stop_and_exit(self, quotes):
+        """Paper STOP; unpriced positions remain open and entries remain blocked."""
+        result=self.emergency_flatten(quotes)
+        self.halt_reason="OPERATOR_STOP" if not result["remaining"] else "EXIT_INCOMPLETE"
+        self._save()
+        return result
+
     def halt(self,reason="MANUAL_KILL_SWITCH"):
         """Persistently disable new BUYs; protective SELLs remain permitted."""
         self.halted=True
