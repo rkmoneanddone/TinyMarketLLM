@@ -17,8 +17,7 @@ async function control(path,message,target="trade-control-result",payload={}){
   catch(e){put(target,"Error: "+e.message);}
 }
 el("start-trading").onclick=()=>control("/api/start");
-el("stop-trading").onclick=()=>control("/api/stop","Stop paper entries and attempt to exit every open position?");
-el("emergency").onclick=()=>control("/api/emergency","Emergency halt: attempt all paper exits. START cannot reset this.","emergency-result");
+el("stop-trading").onclick=()=>control("/api/stop","Stop new paper BUYs? Existing positions will remain open and monitored.");
 el("kill-trading").onclick=()=>control("/api/emergency","Emergency halt and attempt to exit ALL paper positions.");
 el("save-symbols").onclick=async()=>{
   if(!selected){put("config-result","Select an exact instrument from search results first.");return;}
