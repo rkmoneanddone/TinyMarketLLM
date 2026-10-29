@@ -39,6 +39,8 @@ class AccountState:
     available_cash: Decimal = D("0")
     reconciled: bool = False
     trading_enabled: bool = True
+    stop_loss_exit_pending: bool = False
+    daily_loss_limit_reached: bool = False
 
 class HardCheckRejected(ValueError):
     pass
@@ -71,6 +73,11 @@ def validate_order(order: OrderRequest, state: AccountState, limits: HardLimits 
             raise HardCheckRejected("SELL requires confirmed BUY holdings and unreserved quantity")
         return
 
+    # BUY: stop-loss exits take priority; never re-enter to recover losses.
+    if state.stop_loss_exit_pending:
+        raise HardCheckRejected("Stop-loss exit pending: new BUY entries blocked")
+    if state.daily_loss_limit_reached:
+        raise HardCheckRejected("Daily loss limit reached: new BUY entries blocked")
     # BUY: no shorts, no leverage, no budget reuse for unsettled orders.
     notional = price * order.quantity
     if state.daily_entries >= limits.max_daily_entries:
