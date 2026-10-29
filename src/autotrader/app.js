@@ -46,3 +46,41 @@ async function poll(){
   catch(e){put("connection","DISCONNECTED · "+e.message);}
 }
 poll();setInterval(poll,1500);
+
+let lastSymbols="";
+function showTab(config){
+  el("config-panel").hidden=!config;
+  el("monitor-panel").hidden=config;
+}
+el("tab-monitor").addEventListener("click",()=>showTab(false));
+el("tab-config").addEventListener("click",()=>showTab(true));
+async function post(path,payload){
+  const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||"Request failed");
+  return data;
+}
+el("save-symbols").addEventListener("click",async()=>{
+  try{
+    const symbols=el("symbols").value.split(",").map(s=>s.trim().toUpperCase()).filter(Boolean);
+    const result=await post("/api/watchlist",{symbols});
+    el("config-result").textContent="Saved: "+result.watchlist.join(", ");
+    lastSymbols=result.watchlist.join(", ");
+  }catch(e){el("config-result").textContent="Error: "+e.message;}
+});
+el("emergency").addEventListener("click",async()=>{
+  if(!confirm("HALT all new paper BUYs and attempt to SELL ALL paper positions at last observed prices?"))return;
+  try{
+    const result=await post("/api/emergency",{});
+    el("emergency-result").textContent="Closed: "+result.closed.length+"; remaining: "+result.remaining.join(", ")+"; errors: "+JSON.stringify(result.errors);
+  }catch(e){el("emergency-result").textContent="Error: "+e.message;}
+});
+const oldRender=render;
+render=function(data){
+  oldRender(data);
+  const symbols=data.watchlist.join(", ");
+  if(document.activeElement!==el("symbols") && lastSymbols!==symbols){
+    el("symbols").value=symbols;
+    lastSymbols=symbols;
+  }
+};
