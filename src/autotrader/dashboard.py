@@ -35,7 +35,7 @@ def create_handler(monitor, lock):
             self.wfile.write(body)
 
         def do_POST(self):
-            if self.path not in ("/api/watchlist", "/api/emergency"):
+            if self.path not in ("/api/watchlist", "/api/emergency", "/api/stop", "/api/start"):
                 self.send_error(405,"Live trading endpoints disabled")
                 return
             try:
@@ -54,10 +54,19 @@ def create_handler(monitor, lock):
                             raise ValueError("Invalid stock symbol")
                         result={"watchlist":list(monitor.engine.update_watchlist(symbols))}
                         monitor.latest={s:q for s,q in monitor.latest.items() if s in symbols}
+                    elif self.path == "/api/start":
+                        result={"status":monitor.engine.start()}
                     else:
-                        result=monitor.engine.emergency_flatten({
-                            s:q["price"] for s,q in monitor.latest.items()
-                        })
+                        from datetime import datetime, timezone
+                        quotes={}
+                        for symbol,q in monitor.latest.items():
+                            stamp=datetime.fromisoformat(q["updated_at"])
+                            if (datetime.now(timezone.utc)-stamp).total_seconds() <= monitor.max_age_seconds:
+                                quotes[symbol]=q["price"]
+                        if self.path == "/api/stop":
+                            result=monitor.engine.stop_and_exit(quotes)
+                        else:
+                            result=monitor.engine.emergency_flatten(quotes)
                 body=json.dumps(result).encode("utf-8")
                 code=200
             except (ValueError,KeyError,TypeError) as exc:
