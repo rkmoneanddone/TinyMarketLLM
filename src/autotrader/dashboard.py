@@ -88,7 +88,7 @@ def create_handler(monitor, lock, catalog=None):
                             if (datetime.now(timezone.utc)-stamp).total_seconds() <= monitor.max_age_seconds:
                                 quotes[symbol]=q["price"]
                         if self.path == "/api/stop":
-                            result=monitor.engine.stop_and_exit(quotes)
+                            result={"status":monitor.engine.stop()}
                         else:
                             result=monitor.engine.emergency_flatten(quotes)
                 body=json.dumps(result).encode("utf-8")
