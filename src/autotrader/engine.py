@@ -156,6 +156,13 @@ class AutoTrader:
         self._save()
         return "STARTED"
 
+    def stop(self):
+        """Stop new paper entries without closing existing positions."""
+        if self.halted and self.halt_reason not in ("OPERATOR_STOP",):
+            raise HardCheckRejected("Existing risk/emergency halt remains active")
+        self.halt("OPERATOR_STOP")
+        return "STOPPED"
+
     def stop_and_exit(self, quotes):
         """Paper STOP; unpriced positions remain open and entries remain blocked."""
         result=self.emergency_flatten(quotes)
