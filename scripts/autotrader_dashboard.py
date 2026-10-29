@@ -32,6 +32,8 @@ def main():
     p.add_argument("--port",type=int,default=8765)
     args=p.parse_args()
     if args.interval<=0: p.error("--interval must be positive")
+    if not args.ledger:
+        args.ledger="data/autotrader/dashboard_paper_ledger.json"
     engine=AutoTrader(journal=args.ledger)
     monitor=PaperMonitor(engine,demo_signals=args.demo)
     lock=threading.RLock()
@@ -40,6 +42,8 @@ def main():
         for quote in source:
             if monitor.stopped:break
             with lock:
+                if quote.symbol not in engine.watchlist:
+                    continue
                 try:monitor.ingest(quote)
                 except Exception as exc:
                     monitor.errors+=1
