@@ -26,6 +26,16 @@ class ControlTests(unittest.TestCase):
         self.assertEqual(result["closed"][0]["reason"],"EMERGENCY_EXIT")
         with self.assertRaises(HardCheckRejected):
             engine.buy("BEL",100,99)
+    def test_stop_preserves_positions(self):
+        engine=AutoTrader()
+        engine.buy("SBIN",800,790)
+        self.assertEqual(engine.stop(),"STOPPED")
+        self.assertIn("SBIN",engine.positions)
+        self.assertTrue(engine.halted)
+        with self.assertRaises(HardCheckRejected):
+            engine.start()
+        engine.sell("SBIN",810,"MANUAL_PAPER_EXIT")
+        self.assertEqual(engine.start(),"STARTED")
     def test_stop_then_start(self):
         engine=AutoTrader()
         engine.buy("SBIN",800,790)
