@@ -1,10 +1,13 @@
 import tempfile
 import unittest
 from pathlib import Path
-from src.autotrader.engine import AutoTrader
+from src.autotrader.engine import AutoTrader, trade_market_date
 from src.autotrader.hard_checks import HardCheckRejected
 
 class EndToEndTests(unittest.TestCase):
+    def test_utc_trade_converts_to_ist_next_day(self):
+        self.assertEqual(trade_market_date("2026-10-29T18:58:58+00:00").isoformat(),"2026-10-30")
+
     def test_buy_target_report_restart(self):
         with tempfile.TemporaryDirectory() as d:
             path=Path(d)/"ledger.json"
