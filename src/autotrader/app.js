@@ -10,6 +10,7 @@ function render(data){
   put("positions-count",data.daily.open_positions);
   put("entries",data.entries_today+" / 5");
   put("halt",data.daily.halted?"HALTED":"READY");
+  el("halt").title=data.daily.halt_reason||"";
   el("halt").className=data.daily.halted?"bad":"good";
   put("errors",data.errors);
   put("daily-trades",data.daily.trades);
@@ -26,9 +27,9 @@ function render(data){
   const open=el("open");open.replaceChildren();
   for(const [symbol,p] of Object.entries(data.positions)){
     const tr=document.createElement("tr");
-    [symbol,p.quantity,p.entry,p.stop,p.target].forEach(x=>cell(tr,x));open.append(tr);
+    [symbol,p.quantity,p.entry,p.stop,p.target,money((Number(data.quotes[symbol]?.price||p.entry)-Number(p.entry))*Number(p.quantity))].forEach(x=>cell(tr,x));open.append(tr);
   }
-  if(!open.children.length){const tr=document.createElement("tr");const td=document.createElement("td");td.colSpan=5;td.textContent="No open paper positions";tr.append(td);open.append(tr);}
+  if(!open.children.length){const tr=document.createElement("tr");const td=document.createElement("td");td.colSpan=6;td.textContent="No open paper positions";tr.append(td);open.append(tr);}
   const events=el("events");events.replaceChildren();
   for(const item of data.recent_events.slice(-8).reverse()){
     const div=document.createElement("div");div.className="event";
