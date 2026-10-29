@@ -8,20 +8,18 @@
 </head>
 <body>
 <main>
-<header><div><p class="eyebrow">TinyMarketLLM / AUTOTRADER</p><h1>Trading Command Center</h1><p class="muted">Custom watchlist · Cash delivery only · No broker orders</p></div><div class="pill">● PAPER ONLY</div></header>
-<nav class="panel"><button type="button" id="tab-monitor">Monitor</button> <button type="button" id="tab-config">Configuration</button> <span class="muted">Local paper mode · no login</span></nav>
+<header class="compact-header"><div class="brand"><b>AutoTrader</b><span class="muted">TinyMarketLLM · Local paper trading</span></div><nav class="tabs"><button id="tab-monitor" type="button">Monitor</button><button id="tab-config" type="button">Configuration</button></nav><span class="pill">● PAPER ONLY</span></header>
 <section id="config-panel" class="panel" hidden>
-<h2>Configuration</h2>
-<p class="muted">Watch up to 3 NSE stocks. Existing open positions cannot be removed. Newly added stocks need a matching data feed.</p>
-<label for="symbols">Stock symbols (comma-separated)</label>
-<input id="symbols" type="text" maxlength="90" placeholder="SBIN, BEL, ITC">
-<button type="button" id="save-symbols">Save watchlist</button>
+<div class="panel-head"><h2>Trading controls</h2><span class="muted">Paper only · no login</span></div>
+<div class="trade-controls"><button id="start-trading" type="button">START</button><button id="stop-trading" type="button">STOP &amp; EXIT</button><button id="emergency" type="button">HALT &amp; EXIT ALL</button></div>
+<p id="trade-control-result" role="status"></p><p id="emergency-result" role="status"></p>
+<h2>Manage watchlist <small>(maximum 3)</small></h2>
+<p class="muted">Search the local instrument catalog and select an exact symbol. Adding preserves your existing stocks; remove them individually. Dhan mapping requires a downloaded instrument master.</p>
+<input id="symbols" type="search" placeholder="Search company or NSE symbol" autocomplete="off">
+<button id="save-symbols" type="button">Add selected stock</button>
+<div id="symbol-results"></div><div id="current-symbols"></div>
 <p id="config-result" role="status"></p>
-<p>Product: <b>LONG</b> · INTRADAY <b>DISABLED</b> · Maximum capital ₹10,000 · Risk ₹100/trade · 5 entries/day</p>
-<h2>Emergency control</h2>
-<p class="muted">HALT + EXIT ALL: immediately blocks new paper BUYs and attempts SELL at the latest observed quote for each held stock. No valid quote = position stays open. This is NOT a broker exit.</p>
-<button type="button" id="emergency" style="background:#a71932;color:white;padding:14px;border-radius:8px;font-weight:800">HALT + EXIT ALL PAPER POSITIONS</button>
-<p id="emergency-result" role="status"></p>
+<p class="muted">Product: LONG · INTRADAY disabled · Capital limit ₹10,000 · Risk ₹100/trade · 5 entries/day</p>
 </section>
 <div id="monitor-panel">
 <section class="metrics">
@@ -34,7 +32,7 @@
 </section>
 <section class="panel"><div class="panel-head"><h2>Live monitor <small>(simulated/replayed)</small></h2><span id="updated">Waiting for data</span></div><div class="scroll"><table><thead><tr><th>Symbol</th><th>LTP</th><th>Volume</th><th>Futures OI*</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th></tr></thead><tbody id="watchlist"></tbody></table></div><p class="note">*OI is shown only if supplied by the replay source; demo values are synthetic. No real-time Dhan feed is connected.</p></section>
 <div class="columns">
-<section class="panel"><div class="panel-head"><h2>Open positions</h2><div class="trade-controls"><button id="start-trading" type="button">START</button><button id="stop-trading" type="button">STOP &amp; EXIT</button><button id="kill-trading" type="button">EMERGENCY KILL</button></div></div><p id="trade-control-result" role="status"></p><div class="scroll"><table><thead><tr><th>Stock</th><th>Qty</th><th>Entry</th><th>SL</th><th>TP</th><th>Unrealized P&amp;L</th></tr></thead><tbody id="open"></tbody></table></div></section>
+<section class="panel"><div class="panel-head"><h2>Open positions</h2><button id="kill-trading" type="button">EXIT ALL / KILL</button></div><p id="trade-control-result" role="status"></p><div class="scroll"><table><thead><tr><th>Stock</th><th>Qty</th><th>Entry</th><th>SL</th><th>TP</th><th>Unrealized P&amp;L</th><th>Action</th></tr></thead><tbody id="open"></tbody></table></div></section>
 <section class="panel"><h2>Reports</h2><div class="report"><span>Daily trades</span><b id="daily-trades">—</b></div><div class="report"><span>Daily win rate</span><b id="winrate">—</b></div><div class="report"><span>Weekly realized P&amp;L</span><b id="weekly">—</b></div><div class="report"><span>Unrealized P&amp;L</span><b id="unrealized">—</b></div></section>
 </div>
 <section class="panel"><h2>Recent trade events</h2><div id="events" class="events">No events yet.</div></section>
