@@ -49,7 +49,7 @@ class AutoTrader:
     def _save(self):
         if not self.journal:return
         self.journal.parent.mkdir(parents=True,exist_ok=True)
-        data=dict(capital=str(self.capital),cash=str(self.cash),positions=self.positions,trades=self.trades,
+        data=dict(capital=str(self.capital),cash=str(self.cash),watchlist=self.watchlist,positions=self.positions,trades=self.trades,
                   entries=self.entries,day=self.day,daily_pnl=str(self.daily_pnl),halted=self.halted,
                   halt_reason=self.halt_reason)
         tmp=self.journal.with_suffix(".tmp")
@@ -71,6 +71,9 @@ class AutoTrader:
         self.day=data["day"]
         self.daily_pnl=D(data["daily_pnl"])
         self.halted=bool(data["halted"])
+        if "watchlist" in data:
+            self.watchlist=validate_watchlist(data["watchlist"],self.limits)
+            self.prices={s:[] for s in self.watchlist}
         self.halt_reason=data.get("halt_reason")
         self._roll()
 
@@ -112,6 +115,30 @@ class AutoTrader:
             self.halt_reason = "CAPITAL_EXHAUSTED"
         self._save()
         return trade
+
+    def update_watchlist(self, symbols):
+        updated=validate_watchlist(symbols,self.limits)
+        if any(s not in updated for s in self.positions):
+            raise HardCheckRejected("Cannot remove a stock with an open position")
+        self.watchlist=updated
+        self.prices={s:self.prices.get(s,[]) for s in updated}
+        self.last={s:v for s,v in self.last.items() if s in updated}
+        self._save()
+        return updated
+
+    def emergency_flatten(self, quotes):
+        """Paper-only: halt new entries and close at valid observed quotes."""
+        self.halt("EMERGENCY_FLATTEN")
+        closed=[]
+        errors={}
+        for symbol in tuple(self.positions):
+            try:
+                price=D(quotes[symbol])
+                if not price.is_finite() or price<=0: raise ValueError("Invalid price")
+                closed.append(self.sell(symbol,price,"EMERGENCY_EXIT"))
+            except (KeyError,ValueError,HardCheckRejected) as exc:
+                errors[symbol]=str(exc)
+        return dict(closed=closed,errors=errors,remaining=list(self.positions))
 
     def halt(self,reason="MANUAL_KILL_SWITCH"):
         """Persistently disable new BUYs; protective SELLs remain permitted."""
