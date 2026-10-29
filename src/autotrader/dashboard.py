@@ -9,7 +9,7 @@ from pathlib import Path
 
 HTML = Path(__file__).with_name("dashboard.html")
 
-def create_handler(monitor, lock):
+def create_handler(monitor, lock, catalog=None):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path == "/":
@@ -18,6 +18,11 @@ def create_handler(monitor, lock):
             elif self.path in ("/style.css","/app.js"):
                 body=HTML.with_name(self.path[1:]).read_bytes()
                 content_type="text/css; charset=utf-8" if self.path.endswith(".css") else "application/javascript; charset=utf-8"
+            elif self.path.startswith("/api/instruments?q="):
+                from urllib.parse import parse_qs, urlsplit
+                query=parse_qs(urlsplit(self.path).query).get("q",[""])[0]
+                body=json.dumps(catalog.search(query) if catalog else []).encode("utf-8")
+                content_type="application/json; charset=utf-8"
             elif self.path == "/api/status":
                 with lock:
                     body=json.dumps(monitor.status()).encode("utf-8")
@@ -35,7 +40,7 @@ def create_handler(monitor, lock):
             self.wfile.write(body)
 
         def do_POST(self):
-            if self.path not in ("/api/watchlist", "/api/emergency", "/api/stop", "/api/start"):
+            if self.path not in ("/api/watchlist", "/api/emergency", "/api/stop", "/api/start", "/api/exit"):
                 self.send_error(405,"Live trading endpoints disabled")
                 return
             try:
@@ -46,14 +51,33 @@ def create_handler(monitor, lock):
                 with lock:
                     if self.path=="/api/watchlist":
                         import re
-                        symbols=payload.get("symbols")
-                        if not isinstance(symbols,list) or not all(isinstance(s,str) for s in symbols):
-                            raise ValueError("Expected symbols array")
-                        symbols=[s.strip().upper() for s in symbols]
+                        action=payload.get("action")
+                        symbol=payload.get("symbol")
+                        if action not in ("add","remove") or not isinstance(symbol,str):
+                            raise ValueError("Expected add/remove and stock symbol")
+                        symbol=symbol.strip().upper()
+                        current=list(monitor.engine.watchlist)
+                        if action=="add":
+                            if catalog is None: raise ValueError("Instrument catalog unavailable")
+                            catalog.resolve(symbol)
+                            symbols=current if symbol in current else current+[symbol]
+                        else:
+                            symbols=[s for s in current if s!=symbol]
+                            if len(symbols)==len(current): raise ValueError("Symbol not watched")
                         if any(not re.fullmatch(r"[A-Z0-9&.-]{1,24}",s) for s in symbols):
                             raise ValueError("Invalid stock symbol")
                         result={"watchlist":list(monitor.engine.update_watchlist(symbols))}
                         monitor.latest={s:q for s,q in monitor.latest.items() if s in symbols}
+                    elif self.path == "/api/exit":
+                        symbol=payload.get("symbol")
+                        if not isinstance(symbol,str) or symbol not in monitor.engine.positions:
+                            raise ValueError("No open position for symbol")
+                        q=monitor.latest.get(symbol)
+                        if not q: raise ValueError("No observed quote: position remains open")
+                        from datetime import datetime, timezone
+                        if (datetime.now(timezone.utc)-datetime.fromisoformat(q["updated_at"])).total_seconds()>monitor.max_age_seconds:
+                            raise ValueError("Stale quote: position remains open")
+                        result=monitor.engine.sell(symbol,q["price"],"MANUAL_PAPER_EXIT")
                     elif self.path == "/api/start":
                         result={"status":monitor.engine.start()}
                     else:
@@ -83,13 +107,13 @@ def create_handler(monitor, lock):
             pass
     return Handler
 
-def serve(monitor, lock=None, host="127.0.0.1", port=8765):
+def serve(monitor, lock=None, host="127.0.0.1", port=8765, catalog=None):
     if host not in ("127.0.0.1","localhost"):
         raise ValueError("Dashboard must bind to localhost only")
     if not 1 <= port <= 65535:
         raise ValueError("Invalid port")
     lock=lock or threading.RLock()
-    server=ThreadingHTTPServer(("127.0.0.1",port),create_handler(monitor,lock))
+    server=ThreadingHTTPServer(("127.0.0.1",port),create_handler(monitor,lock,catalog))
     try:
         print(f"Paper dashboard: http://127.0.0.1:{port}")
         server.serve_forever()
