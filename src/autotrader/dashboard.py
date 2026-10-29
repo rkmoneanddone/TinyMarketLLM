@@ -15,7 +15,7 @@ def create_handler(monitor, lock):
             if self.path == "/":
                 body=HTML.read_bytes()
                 content_type="text/html; charset=utf-8"
-            elif self.path == "/api/status":
+            elif self.path in ("/style.css","/app.js"):\n                body=HTML.with_name(self.path[1:]).read_bytes()\n                content_type="text/css; charset=utf-8" if self.path.endswith(".css") else "application/javascript; charset=utf-8"\n            elif self.path == "/api/status":
                 with lock:
                     body=json.dumps(monitor.status()).encode("utf-8")
                 content_type="application/json; charset=utf-8"
