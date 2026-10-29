@@ -49,8 +49,8 @@ def validate_order(order: OrderRequest, state: AccountState, limits: HardLimits 
     """Raises on any violation; checks are independent of strategy signals."""
     if not state.reconciled:
         raise HardCheckRejected("Broker holdings, cash and pending orders not reconciled")
-    if not state.trading_enabled:
-        raise HardCheckRejected("Trading halted")
+    if not state.trading_enabled and order.side != "SELL":
+        raise HardCheckRejected("Trading halted: new BUY entries blocked")
     if not order.symbol or not order.symbol.strip():
         raise HardCheckRejected("Missing symbol")
     if not isinstance(order.quantity, int) or isinstance(order.quantity, bool) or order.quantity <= 0:
