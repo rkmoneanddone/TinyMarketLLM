@@ -14,6 +14,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src.autotrader.dashboard import serve
 from src.autotrader.engine import AutoTrader
 from src.autotrader.monitor import PaperMonitor,Quote,csv_replay
+from src.autotrader.instruments import InstrumentCatalog
 
 def synthetic():
     """Illustrative prices, not actual market data."""
@@ -30,11 +31,13 @@ def main():
     p.add_argument("--demo",action="store_true",help="Enable unvalidated demonstration entries")
     p.add_argument("--ledger",help="Persist paper trades to JSON")
     p.add_argument("--port",type=int,default=8765)
+    p.add_argument("--dhan-master",help="Optional local Dhan instrument master CSV")
     args=p.parse_args()
     if args.interval<=0: p.error("--interval must be positive")
     if not args.ledger:
         args.ledger="data/autotrader/dashboard_paper_ledger.json"
     engine=AutoTrader(journal=args.ledger)
+    catalog=InstrumentCatalog(args.dhan_master)
     monitor=PaperMonitor(engine,demo_signals=args.demo)
     lock=threading.RLock()
     source=csv_replay(args.csv,engine.watchlist) if args.csv else synthetic()
@@ -54,7 +57,7 @@ def main():
             time.sleep(args.interval)
     thread=threading.Thread(target=worker,daemon=True)
     thread.start()
-    try:serve(monitor,lock=lock,port=args.port)
+    try:serve(monitor,lock=lock,port=args.port,catalog=catalog)
     except KeyboardInterrupt:pass
     finally:
         monitor.stop()
