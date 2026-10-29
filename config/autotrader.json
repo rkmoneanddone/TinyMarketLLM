@@ -1,0 +1,15 @@
+{
+  "mode": "PAPER",
+  "product": "LONG",
+  "product_options_for_ui": ["LONG", "INTRADAY"],
+  "intraday_enabled": false,
+  "max_capital_inr": 10000,
+  "max_daily_entries": 5,
+  "max_positions": 3,
+  "max_watched_stocks": 3,
+  "max_risk_per_trade_inr": 100,
+  "reward_risk_ratio": 2,
+  "watchlist": ["SBIN", "BEL", "ITC"],
+  "breakout_retest_column": "NOT_IMPLEMENTED",
+  "live_orders_enabled": false
+}
