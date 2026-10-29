@@ -145,7 +145,7 @@ class AutoTrader:
         self._roll()
         if not self.halted:
             return "ALREADY_RUNNING"
-        if self.halt_reason != "OPERATOR_STOP":
+        if self.halt_reason not in ("OPERATOR_STOP","EXIT_INCOMPLETE"):
             raise HardCheckRejected("Risk or emergency halt cannot be reset by START")
         if self.positions:
             raise HardCheckRejected("Cannot START while positions remain open")
