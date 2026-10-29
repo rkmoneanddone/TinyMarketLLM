@@ -26,6 +26,26 @@ class ControlTests(unittest.TestCase):
         self.assertEqual(result["closed"][0]["reason"],"EMERGENCY_EXIT")
         with self.assertRaises(HardCheckRejected):
             engine.buy("BEL",100,99)
+    def test_stop_then_start(self):
+        engine=AutoTrader()
+        engine.buy("SBIN",800,790)
+        result=engine.stop_and_exit({"SBIN":"810"})
+        self.assertEqual(result["remaining"],[])
+        self.assertTrue(engine.halted)
+        self.assertEqual(engine.start(),"STARTED")
+        self.assertFalse(engine.halted)
+    def test_incomplete_exit_blocks_restart(self):
+        engine=AutoTrader()
+        engine.buy("SBIN",800,790)
+        engine.stop_and_exit({})
+        self.assertEqual(engine.halt_reason,"EXIT_INCOMPLETE")
+        with self.assertRaises(HardCheckRejected):
+            engine.start()
+    def test_emergency_cannot_restart(self):
+        engine=AutoTrader()
+        engine.emergency_flatten({})
+        with self.assertRaises(HardCheckRejected):
+            engine.start()
     def test_missing_quote_remains_open(self):
         engine=AutoTrader()
         engine.buy("SBIN",800,790)
