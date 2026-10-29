@@ -1,6 +1,13 @@
 """Paper-only end-to-end engine. No Dhan calls, no real orders."""
 import json
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
+
+MARKET_TZ = ZoneInfo("Asia/Kolkata")
+def market_date():
+    return datetime.now(MARKET_TZ).date()
+def trade_market_date(timestamp):
+    return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).astimezone(MARKET_TZ).date()
 from decimal import Decimal
 from pathlib import Path
 from .core import make_trade_plan
@@ -20,14 +27,14 @@ class AutoTrader:
         self.prices={s:[] for s in self.watchlist}
         self.last={}
         self.entries=0
-        self.day=date.today().isoformat()
+        self.day=market_date().isoformat()
         self.daily_pnl=D(0)
         self.halted=False
         if self.journal and self.journal.exists(): self._load()
 
     def _roll(self):
-        if self.day!=date.today().isoformat():
-            self.day=date.today().isoformat()
+        if self.day!=market_date().isoformat():
+            self.day=market_date().isoformat()
             self.entries=0
             self.daily_pnl=D(0)
             self._save()
@@ -122,9 +129,9 @@ class AutoTrader:
 
     def report(self,period="all"):
         if period not in ("all","daily","weekly"):raise ValueError("Unknown period")
-        today=date.today()
+        today=market_date()
         trades=[t for t in self.trades if period=="all" or
-                (period=="daily" and date.fromisoformat(t["closed"][:10])==today) or
+                (period=="daily" and trade_market_date(t["closed"])==today) or
                 (period=="weekly" and 0<=(today-date.fromisoformat(t["closed"][:10])).days<7)]
         wins=sum(D(t["pnl"])>0 for t in trades)
         unrealized=sum((self.last.get(s,D(p["entry"]))-D(p["entry"]))*p["quantity"]
