@@ -84,3 +84,15 @@ render=function(data){
     lastSymbols=symbols;
   }
 };
+
+async function control(path,confirmation){
+  if(confirmation && !confirm(confirmation))return;
+  try{
+    const result=await post(path,{});
+    el("trade-control-result").textContent=JSON.stringify(result);
+    await poll();
+  }catch(e){el("trade-control-result").textContent="Error: "+e.message;}
+}
+el("start-trading").addEventListener("click",()=>control("/api/start"));
+el("stop-trading").addEventListener("click",()=>control("/api/stop","STOP new paper BUYs and attempt to exit ALL open paper positions?"));
+el("kill-trading").addEventListener("click",()=>control("/api/emergency","EMERGENCY KILL: permanently halt paper entries and attempt to exit all positions? START cannot override this."));
