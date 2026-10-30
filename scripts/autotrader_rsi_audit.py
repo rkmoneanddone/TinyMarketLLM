@@ -39,7 +39,8 @@ def audit_records(records):
     return {"outcomes":dict(Counter(r.get("outcome","UNKNOWN") for r in records if r["status"]=="COMPLETE")),
             "skipped_reasons":dict(Counter(r.get("reason","UNKNOWN") for r in records if r["status"]=="SKIPPED")),
             "missing_crossover":sum("cross_at" not in r for r in records if r["status"]=="COMPLETE"),
-            "missing_retest":sum("retest_at" not in r for r in records if r["status"]=="COMPLETE")}
+            "missing_retest":sum("retest_at" not in r for r in records if r["status"]=="COMPLETE"),
+            "invalid_event_order":sum(not (r.get("cross_at","") < r.get("retest_at","") < r.get("signal_at","") < r.get("entry_at","")) for r in records if r["status"]=="COMPLETE")}
 
 def main():
     p=argparse.ArgumentParser()
