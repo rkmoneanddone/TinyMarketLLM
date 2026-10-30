@@ -15,6 +15,7 @@ from src.autotrader.dashboard import serve
 from src.autotrader.engine import AutoTrader
 from src.autotrader.monitor import PaperMonitor,Quote,csv_replay
 from src.autotrader.instruments import InstrumentCatalog
+from src.autotrader.dhan_live_data import DhanReadOnlyFeed
 
 def synthetic():
     """Illustrative prices, not actual market data."""
@@ -32,16 +33,33 @@ def main():
     p.add_argument("--ledger",help="Persist paper trades to JSON")
     p.add_argument("--port",type=int,default=8765)
     p.add_argument("--dhan-master",help="Optional local Dhan instrument master CSV")
+    p.add_argument("--live-dhan",action="store_true",help="Read-only Dhan LTP polling; paper orders ONLY")
     args=p.parse_args()
     if args.interval<=0: p.error("--interval must be positive")
     if not args.ledger:
         args.ledger="data/autotrader/dashboard_paper_ledger.json"
     engine=AutoTrader(journal=args.ledger)
     catalog=InstrumentCatalog(args.dhan_master)
+    if args.live_dhan and args.demo: p.error("--demo cannot be used with --live-dhan")
+    if args.live_dhan and not args.dhan_master: p.error("--live-dhan requires --dhan-master")
+    feed=DhanReadOnlyFeed(catalog) if args.live_dhan else None
     monitor=PaperMonitor(engine,demo_signals=args.demo)
     lock=threading.RLock()
     source=csv_replay(args.csv,engine.watchlist) if args.csv else synthetic()
     def worker():
+        if feed is not None:
+            while not monitor.stopped:
+                try:
+                    quotes=feed.snapshot(tuple(engine.watchlist))
+                    with lock:
+                        for quote in quotes: monitor.ingest(quote)
+                except Exception as exc:
+                    with lock:
+                        monitor.errors+=1
+                        monitor.events.append(dict(error="LIVE DATA: "+str(exc),symbol="FEED"))
+                        engine.halt("LIVE_DATA_ERROR")
+                time.sleep(max(args.interval,1.0))
+            return
         for quote in source:
             if monitor.stopped:break
             with lock:
