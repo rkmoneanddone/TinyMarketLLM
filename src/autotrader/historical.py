@@ -36,7 +36,7 @@ def detect_setups(symbol,bars,lookback=20,horizon=5):
     if lookback<2 or horizon<1:raise ValueError("Invalid parameters")
     validate_bars(bars)
     records=[]
-    for i in range(lookback,len(bars)-1):
+    for i in range(lookback+1,len(bars)-1):
         prior_high=max(b.high for b in bars[i-lookback:i])
         prev_high=max(b.high for b in bars[i-lookback-1:i-1])
         b=bars[i]
