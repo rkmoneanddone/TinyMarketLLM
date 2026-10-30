@@ -26,6 +26,25 @@ def rsi_sma(bars, rsi_period=14, ma_period=14):
         mas[i]=sum(rsis[i-ma_period+1:i+1],D(0))/ma_period
     return rsis,mas
 
+def ema_alignment(bars):
+    """Causal close-based EMA 9 > 21 > 50 > 200; unavailable until 200 closes."""
+    periods=(9,21,50,200)
+    aligned=[False]*len(bars)
+    values={}
+    for period in periods:
+        series=[None]*len(bars)
+        if len(bars)>=period:
+            ema=sum((b.close for b in bars[:period]),D(0))/D(period)
+            series[period-1]=ema
+            alpha=D(2)/D(period+1)
+            for i in range(period,len(bars)):
+                ema=alpha*bars[i].close+(D(1)-alpha)*ema
+                series[i]=ema
+        values[period]=series
+    for i in range(199,len(bars)):
+        aligned[i]=values[9][i]>values[21][i]>values[50][i]>values[200][i]
+    return aligned
+
 def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
                        tolerance_pct="5",horizon=5):
     """Fresh crossover, later retest near RSI SMA, then bullish RSI and price close.
@@ -36,6 +55,7 @@ def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
     validate_bars(bars)
     if retest_window<2 or horizon<1 or D(tolerance_pct)<0:raise ValueError("Invalid parameters")
     rsis,mas=rsi_sma(bars,rsi_period,ma_period)
+    trend_aligned=ema_alignment(bars)
     records=[]
     state=None
     for i in range(1,len(bars)):
@@ -51,7 +71,8 @@ def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
                     state["swing_low"]=bars[i].low
             elif i>state["retest"]:
                 state["swing_low"]=min(state["swing_low"],bars[i].low)
-                if rsis[i]>rsis[i-1] and rsis[i]>mas[i] and bars[i].close>bars[i-1].high:
+                if (rsis[i]>rsis[i-1] and rsis[i]>mas[i]
+                    and bars[i].close>bars[i-1].high and trend_aligned[i]):
                     if i+1>=len(bars):
                         records.append(dict(symbol=symbol,setup="RSI_MA_RETEST_1D",
                                             signal_at=bars[i].timestamp,status="PENDING",
