@@ -46,14 +46,14 @@ def ema_alignment(bars):
     return aligned
 
 def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
-                       tolerance_pct="5",horizon=5):
+                       tolerance_pct="5",horizon=5,strict_retest=False,extension_pct="5"):
     """Fresh crossover, later retest near RSI SMA, then bullish RSI and price close.
 
     RSI retest must occur on a candle AFTER crossover; confirmation on a later candle.
     RSI must stay above its MA at retest and confirmation (strict hold).
     """
     validate_bars(bars)
-    if retest_window<2 or horizon<1 or D(tolerance_pct)<0:raise ValueError("Invalid parameters")
+    if retest_window<2 or horizon<1 or D(tolerance_pct)<0 or D(extension_pct)<0:raise ValueError("Invalid parameters")
     rsis,mas=rsi_sma(bars,rsi_period,ma_period)
     trend_aligned=ema_alignment(bars)
     records=[]
@@ -64,9 +64,12 @@ def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
         if state and (i-state["cross"]>retest_window or rsis[i]<mas[i]):
             state=None
         if state and i>state["cross"]:
+            # Extension must occur before the retest candle, never on that candle.
+            was_extended=state["extended"]
             distance=abs(rsis[i]-mas[i])/max(mas[i],D("0.000001"))*D(100)
             if state["retest"] is None:
-                if rsis[i]>=mas[i] and distance<=D(tolerance_pct):
+                if (rsis[i]>=mas[i] and distance<=D(tolerance_pct)
+                    and (not strict_retest or (was_extended and rsis[i]<rsis[i-1]))):
                     state["retest"]=i
                     state["swing_low"]=bars[i].low
             elif i>state["retest"]:
@@ -74,13 +77,13 @@ def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
                 if (rsis[i]>rsis[i-1] and rsis[i]>mas[i]
                     and bars[i].close>bars[i-1].high and trend_aligned[i]):
                     if i+1>=len(bars):
-                        records.append(dict(symbol=symbol,setup="RSI_MA_RETEST_1D",
+                        records.append(dict(symbol=symbol,setup="RSI_MA_RETEST_STRICT_1D" if strict_retest else "RSI_MA_RETEST_1D",
                                             signal_at=bars[i].timestamp,status="PENDING",
                                             reason="NO_ENTRY_CANDLE"))
                     else:
                         entry=bars[i+1].open
                         stop=min(bars[j].low for j in range(state["retest"],i+1))
-                        event=dict(symbol=symbol,setup="RSI_MA_RETEST_1D",
+                        event=dict(symbol=symbol,setup=("RSI_MA_RETEST_STRICT_1D" if strict_retest else "RSI_MA_RETEST_1D"),
                                    cross_at=bars[state["cross"]].timestamp,
                                    retest_at=bars[state["retest"]].timestamp,
                                    signal_at=bars[i].timestamp,entry_at=bars[i+1].timestamp,
@@ -96,6 +99,8 @@ def detect_rsi_retests(symbol,bars,rsi_period=14,ma_period=14,retest_window=10,
                             event["status"]="COMPLETE" if result["complete"] else "PENDING"
                         records.append(event)
                     state=None
+        if state and i>state["cross"] and state["retest"] is None:
+            state["extended"] = state["extended"] or rsis[i]>mas[i]*(D(1)+D(extension_pct)/D(100))
         if cross and state is None:
-            state={"cross":i,"retest":None,"swing_low":None}
+            state={"cross":i,"retest":None,"swing_low":None,"extended":False}
     return records
