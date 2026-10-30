@@ -12,7 +12,7 @@ def load_parquet(path):
         raise RuntimeError("Install pandas and pyarrow to read parquet") from exc
     df=pd.read_parquet(path)
     names={str(c).lower():c for c in df.columns}
-    date_col=next((names[k] for k in ("timestamp","datetime","date","time") if k in names),None)
+    date_col=next((names[k] for k in ("decision_timestamp","timestamp","datetime","date","time") if k in names),None)
     if date_col is None:
         if not isinstance(df.index,pd.DatetimeIndex):raise ValueError("OHLC parquet needs datetime index or date column")
         times=df.index
