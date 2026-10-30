@@ -51,7 +51,7 @@ def group_report(records,split_at,fee_bps="0"):
 def run(paths,split_at,lookback=20,horizon=5,fee_bps="10",volume_multiple="1.5"):
     results={};all_records=[]
     for path in paths:
-        symbol=path.parent.name.upper() if path.parent.name.upper() not in ("LEARNING","MARKET") else path.stem.split("_")[0].upper()
+        symbol=(path.parent.parent.name.upper() if path.parent.name.upper()=="1D" else path.parent.name.upper() if path.parent.name.upper() not in ("LEARNING","MARKET") else path.stem.split("_")[0].upper())
         try:
             bars=load_parquet(path)
             records=filter_records(bars,detect_setups(symbol,bars,lookback,horizon),volume_multiple=volume_multiple)
@@ -64,8 +64,8 @@ def run(paths,split_at,lookback=20,horizon=5,fee_bps="10",volume_multiple="1.5")
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("--directory",default="data/learning")
-    p.add_argument("--glob",default="*_1D_training_v2.parquet")
+    p.add_argument("--directory",default="data/market")
+    p.add_argument("--glob",default="*/1D/ohlc.parquet")
     p.add_argument("--split-at",required=True)
     p.add_argument("--lookback",type=int,default=20)
     p.add_argument("--horizon",type=int,default=5)
