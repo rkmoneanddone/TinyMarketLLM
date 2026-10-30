@@ -52,10 +52,10 @@ def detect_setups(symbol,bars,lookback=20,horizon=5):
         else:
             target=next_open+2*(next_open-stop)
             event.update(status="ELIGIBLE",target=str(target))
-            if i+1>=len(bars)-1:
+            if i+1>=len(bars):
                 event.update(status="PENDING",reason="NO_POST_ENTRY_BARS")
             else:
-                # Outcome evaluator expects signal index followed by entry bar.
+                # Entry occurs at next open; evaluate that entry candle and later bars.
                 result=evaluate_setup(symbol,event["setup"],i,bars,next_open,stop,target,horizon)
                 event.update(result)
                 event["status"]="COMPLETE" if result["complete"] else "PENDING"
@@ -64,7 +64,7 @@ def detect_setups(symbol,bars,lookback=20,horizon=5):
 
 def walkforward(records,split_at):
     """Split by signal time; no parameters fitted on evaluation period."""
-    train=[r for r in records if r["signal_at"]<split_at and r["status"]=="COMPLETE"]
+    train=[r for r in records if r["signal_at"]<split_at and r["status"]=="COMPLETE" and r.get("exit_at","")<split_at]
     test=[r for r in records if r["signal_at"]>=split_at and r["status"]=="COMPLETE"]
     return dict(split_at=split_at,train=summarize(train),unseen=summarize(test),
                 skipped=sum(r["status"]=="SKIPPED" for r in records),
